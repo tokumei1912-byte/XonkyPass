@@ -1,0 +1,67 @@
+/* Базовые токены. Полная дизайн-система — на этапе 2. */
+:root {
+  color-scheme: light dark;
+
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+
+  --bg: #f3f3f3;
+  --surface: #ffffff;
+  --border: rgb(0 0 0 / 0.08);
+  --text: #1b1b1b;
+  --text-muted: #5f5f5f;
+  --accent: #0067c0;
+
+  --radius: 8px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202020;
+    --surface: #2b2b2b;
+    --border: rgb(255 255 255 / 0.08);
+    --text: #ffffff;
+    --text-muted: #a0a0a0;
+    --accent: #4cc2ff;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#app {
+  height: 100%;
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: var(--font-ui);
+  font-size: 12px;
+}

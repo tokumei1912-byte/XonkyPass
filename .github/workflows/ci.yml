@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  checks:
+    name: Проверки (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Зависимости npm
+        run: npm ci
+
+      - name: Форматирование (Prettier)
+        run: npm run format:check
+
+      - name: Линтер (ESLint)
+        run: npm run lint
+
+      - name: Типы (svelte-check)
+        run: npm run check
+
+      - name: Сборка интерфейса
+        run: npm run build
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Форматирование (rustfmt)
+        run: cargo fmt --all -- --check
+
+      - name: Линтер ядра (clippy)
+        run: cargo clippy -p xonkypass-core --all-targets -- -D warnings
+
+      - name: Тесты ядра
+        run: cargo test -p xonkypass-core
+
+  windows:
+    name: Сборка (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Зависимости npm
+        run: npm ci
+
+      # Интерфейс встраивается в exe при компиляции, поэтому собирается первым.
+      - name: Сборка интерфейса
+        run: npm run build
+
+      - name: Линтер (clippy)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Тесты
+        run: cargo test --workspace
+
+      - name: Установщик (NSIS)
+        run: npm run tauri build
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: XonkyPass-setup-${{ github.sha }}
+          path: target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 30

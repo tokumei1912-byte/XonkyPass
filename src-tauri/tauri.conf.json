@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "XonkyPass",
+  "identifier": "com.xonkypass.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "panel",
+        "title": "XonkyPass",
+        "width": 400,
+        "height": 640,
+        "minWidth": 320,
+        "minHeight": 400,
+        "center": true,
+        "visible": false,
+        "decorations": false,
+        "resizable": true,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "shadow": true
+      },
+      {
+        "label": "palette",
+        "title": "XonkyPass — поиск",
+        "width": 640,
+        "height": 400,
+        "center": true,
+        "visible": false,
+        "decorations": false,
+        "resizable": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "shadow": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data:",
+        "font-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      },
+      "devCsp": null,
+      "dangerousDisableAssetCspModification": ["style-src"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "XonkyPass",
+    "copyright": "© 2026 XonkyPass",
+    "category": "Utility",
+    "shortDescription": "Менеджер паролей и заметок",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["Russian", "English"],
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}
