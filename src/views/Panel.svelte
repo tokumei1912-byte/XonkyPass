@@ -18,6 +18,7 @@
   import RecoveryUnlock from './panel/RecoveryUnlock.svelte';
   import Settings from './panel/Settings.svelte';
   import Setup from './panel/Setup.svelte';
+  import Tags from './panel/Tags.svelte';
   import Trash from './panel/Trash.svelte';
   import Unlock from './panel/Unlock.svelte';
 
@@ -120,6 +121,8 @@
     {/key}
   {:else if screen.name === 'trash'}
     <Trash />
+  {:else if screen.name === 'tags'}
+    <Tags />
   {:else if screen.name === 'settings'}
     <Settings />
   {:else if screen.name === 'change-password'}

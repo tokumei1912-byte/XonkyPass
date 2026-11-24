@@ -119,7 +119,7 @@ class ToastStore {
 
 export const toasts = new ToastStore();
 
-// --- Диалог подтверждения ----------------------------------------------------------
+// --- Диалоги: подтверждение и ввод строки -----------------------------------------
 
 export interface ConfirmOptions {
   title: string;
@@ -130,25 +130,54 @@ export interface ConfirmOptions {
   danger?: boolean;
 }
 
-interface OpenConfirm extends ConfirmOptions {
-  resolve: (ok: boolean) => void;
+export interface PromptOptions {
+  title: string;
+  message?: string;
+  /** Подпись поля. */
+  label: string;
+  value?: string;
+  confirm: string;
+  /** Текст ошибки или `null`, если значение подходит. */
+  validate?: (value: string) => string | null;
 }
 
+export type OpenDialog =
+  | (ConfirmOptions & { kind: 'confirm'; resolve: (ok: boolean) => void })
+  | (PromptOptions & { kind: 'prompt'; resolve: (value: string | null) => void });
+
 class DialogStore {
-  current = $state<OpenConfirm | null>(null);
+  current = $state<OpenDialog | null>(null);
 
   /** Спрашивает подтверждение; `true` — пользователь согласился. */
   confirm(options: ConfirmOptions): Promise<boolean> {
-    this.current?.resolve(false);
+    this.close(false);
     return new Promise((resolve) => {
-      this.current = { ...options, resolve };
+      this.current = { ...options, kind: 'confirm', resolve };
     });
   }
 
+  /** Просит ввести строку; `null` — отменили. */
+  prompt(options: PromptOptions): Promise<string | null> {
+    this.close(false);
+    return new Promise((resolve) => {
+      this.current = { ...options, kind: 'prompt', resolve };
+    });
+  }
+
+  /** Закрывает диалог: `ok` — согласие для подтверждения; ввод при этом отменяется. */
   close(ok: boolean): void {
     const current = this.current;
     this.current = null;
-    current?.resolve(ok);
+    if (current?.kind === 'prompt') current.resolve(null);
+    else current?.resolve(ok);
+  }
+
+  /** Ввод готов. */
+  submit(value: string): void {
+    const current = this.current;
+    if (current?.kind !== 'prompt') return;
+    this.current = null;
+    current.resolve(value);
   }
 }
 
@@ -163,6 +192,8 @@ export type MenuEntry =
       shortcut?: string;
       danger?: boolean;
       disabled?: boolean;
+      /** Пункт-переключатель: галочка у выбранного (порядок сортировки и т. п.). */
+      checked?: boolean;
       run: () => unknown;
     }
   | 'separator';

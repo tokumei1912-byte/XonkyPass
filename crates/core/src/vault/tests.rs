@@ -7,7 +7,7 @@ use tempfile::TempDir;
 
 use super::*;
 use crate::kdf::tests::FAST;
-use crate::model::{CustomField, LoginMeta, NoteMeta};
+use crate::model::{CustomField, LoginMeta, NoteMeta, limits};
 
 const PASSWORD: &str = "correct horse battery staple";
 
@@ -783,4 +783,164 @@ fn file_contains_no_plaintext() {
             "в файле открыто лежит {marker}"
         );
     }
+}
+
+// --- Поиск и теги ---
+
+fn tagged(title: &str, tags: &[&str]) -> ItemMeta {
+    let mut meta = login(title);
+    if let ItemMeta::Login(m) = &mut meta {
+        m.tags = tags.iter().map(|&t| t.into()).collect();
+    }
+    meta
+}
+
+fn found(vault: &Vault, query: &str) -> Vec<String> {
+    vault
+        .search(query, &SearchOptions::default())
+        .items
+        .iter()
+        .map(|i| i.meta.title().to_owned())
+        .collect()
+}
+
+fn tags_of(vault: &Vault, id: ItemId) -> Vec<String> {
+    vault.item(id).unwrap().meta.tags().to_vec()
+}
+
+fn tag_counts(vault: &Vault) -> Vec<(String, usize)> {
+    vault
+        .tags()
+        .into_iter()
+        .map(|t| (t.name, t.count))
+        .collect()
+}
+
+#[test]
+fn search_index_follows_changes() {
+    let fx = Fixture::new();
+    let (mut vault, _) = fx.create();
+    let gh = vault.create_item(login("GitHub"), secret("a")).unwrap();
+    let mail = vault.create_item(login("Mail"), secret("b")).unwrap();
+    assert_eq!(found(&vault, "git"), ["GitHub"]);
+
+    let mut meta = vault.item(gh).unwrap().meta;
+    if let ItemMeta::Login(m) = &mut meta {
+        m.title = "Codeberg".into();
+    }
+    vault.update_item(gh, meta, None).unwrap();
+    assert_eq!(found(&vault, "codeberg"), ["Codeberg"]);
+    // Сайт остался прежним — по нему запись тоже находится.
+    assert_eq!(found(&vault, "github.com"), ["Codeberg"]);
+
+    vault.trash(gh).unwrap();
+    assert!(found(&vault, "codeberg").is_empty());
+    vault.restore(gh).unwrap();
+    assert_eq!(found(&vault, "codeberg"), ["Codeberg"]);
+
+    // Пустой запрос: недавно использованные первыми.
+    vault.record_use(mail).unwrap();
+    assert_eq!(found(&vault, ""), ["Mail", "Codeberg"]);
+
+    // После разблокировки индекс строится заново из файла.
+    vault.lock();
+    let vault = fx.unlock();
+    assert_eq!(found(&vault, ""), ["Mail", "Codeberg"]);
+    assert_eq!(found(&vault, "#nothing"), Vec::<String>::new());
+}
+
+#[test]
+fn rename_tag_merges_and_rewrites_notes() {
+    let fx = Fixture::new();
+    let (mut vault, _) = fx.create();
+    let a = vault
+        .create_item(tagged("A", &["Work", "dev"]), secret("1"))
+        .unwrap();
+    let b = vault
+        .create_item(tagged("B", &["job"]), secret("2"))
+        .unwrap();
+    let mut body = note("N", "Задачи #job на неделю");
+    if let ItemMeta::Note(m) = &mut body {
+        m.tags = vec!["job".into()];
+    }
+    let n = vault.create_item(body, secret("")).unwrap();
+    let t = vault
+        .create_item(tagged("T", &["job", "work"]), secret("3"))
+        .unwrap();
+    vault.trash(t).unwrap();
+    let before = vault.item(n).unwrap();
+
+    // Переименование в уже существующий тег — слияние, в том числе в корзине.
+    assert_eq!(vault.rename_tag("#JOB", "work").unwrap(), 3);
+    assert_eq!(tags_of(&vault, a), ["Work", "dev"]);
+    assert_eq!(tags_of(&vault, b), ["work"]);
+    assert_eq!(tags_of(&vault, t), ["work"]);
+    let after = vault.item(n).unwrap();
+    assert_eq!(after.meta.tags(), ["work"]);
+    let ItemMeta::Note(meta) = &after.meta else {
+        panic!("не заметка")
+    };
+    assert_eq!(meta.body, "Задачи #work на неделю");
+    // Служебная правка: время изменения прежнее, истории нет.
+    assert_eq!(after.updated_at, before.updated_at);
+    assert_eq!(after.revision, before.revision + 1);
+    assert!(vault.history(n).unwrap().is_empty());
+
+    assert_eq!(
+        tag_counts(&vault),
+        [("Work".to_owned(), 3), ("dev".to_owned(), 1)]
+    );
+    assert_eq!(found(&vault, "#work"), ["A", "B", "N"]);
+    assert_eq!(vault.rename_tag("нет-такого", "x").unwrap(), 0);
+
+    // Изменения сохранены в файле.
+    vault.lock();
+    let vault = fx.unlock();
+    assert_eq!(tags_of(&vault, b), ["work"]);
+}
+
+#[test]
+fn delete_tag_everywhere() {
+    let fx = Fixture::new();
+    let (mut vault, _) = fx.create();
+    let a = vault
+        .create_item(tagged("A", &["work", "dev"]), secret("1"))
+        .unwrap();
+    let mut body = note("N", "#work: созвон");
+    if let ItemMeta::Note(m) = &mut body {
+        m.tags = vec!["work".into()];
+    }
+    let n = vault.create_item(body, secret("")).unwrap();
+
+    assert_eq!(vault.delete_tag("Work").unwrap(), 2);
+    assert_eq!(tags_of(&vault, a), ["dev"]);
+    assert!(tags_of(&vault, n).is_empty());
+    let ItemMeta::Note(meta) = vault.item(n).unwrap().meta else {
+        panic!("не заметка")
+    };
+    // `#` убран, чтобы тег не вернулся при сохранении заметки.
+    assert_eq!(meta.body, "work: созвон");
+    assert_eq!(tag_counts(&vault), [("dev".to_owned(), 1)]);
+}
+
+#[test]
+fn tag_names_are_validated() {
+    let fx = Fixture::new();
+    let (mut vault, _) = fx.create();
+    vault
+        .create_item(tagged("A", &["dev"]), secret("1"))
+        .unwrap();
+    for (from, to) in [("dev", " # "), ("", "x"), ("#", "x")] {
+        assert!(matches!(
+            vault.rename_tag(from, to),
+            Err(Error::Invalid(Invalid::EmptyTag))
+        ));
+    }
+    assert!(matches!(
+        vault.rename_tag("dev", &"x".repeat(limits::TAG + 1)),
+        Err(Error::Invalid(Invalid::TooLong { .. }))
+    ));
+    // Пробелы в новом имени становятся дефисами, как при вводе тега.
+    vault.rename_tag("dev", "мой проект").unwrap();
+    assert_eq!(tag_counts(&vault), [("мой-проект".to_owned(), 1)]);
 }

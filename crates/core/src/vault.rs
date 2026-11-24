@@ -18,6 +18,7 @@ use crate::kdf::KdfParams;
 use crate::keyslot::{self, Slot, SlotKind};
 use crate::model::{self, CONTENT_VERSION, ItemId, ItemMeta, ItemSecret};
 use crate::recovery::RecoveryKey;
+use crate::search::{self, SearchIndex, SearchOptions, SearchResult, TagCount};
 use crate::store::{self, Header, HistoryRow, ItemRow};
 
 /// Сколько прошлых версий одной записи хранится в истории.
@@ -114,6 +115,8 @@ pub struct Vault {
     key: Key,
     vault_id: [u8; 16],
     unlocked_with: UnlockMethod,
+    /// Метаданные записей вне корзины для поиска; строится при разблокировке.
+    index: SearchIndex,
 }
 
 impl fmt::Debug for Vault {
@@ -190,6 +193,7 @@ impl Vault {
             key,
             vault_id,
             unlocked_with: UnlockMethod::Password,
+            index: SearchIndex::default(),
         };
         Ok((vault, recovery))
     }
@@ -234,12 +238,15 @@ impl Vault {
         }
         let slot = read_slot(&conn, kind)?;
         let key = keyslot::open(&slot, secret, &header.vault_id)?;
-        Ok(Self {
+        let mut vault = Self {
             conn,
             key,
             vault_id: header.vault_id,
             unlocked_with: method,
-        })
+            index: SearchIndex::default(),
+        };
+        vault.index = SearchIndex::new(vault.items(Scope::Active)?.items);
+        Ok(vault)
     }
 
     /// Блокирует хранилище: затирает ключ и закрывает файл.
@@ -314,6 +321,7 @@ impl Vault {
         let meta_ct = self.seal_field(id, Field::Meta, &model::encode_meta(&meta));
         let secret_ct = self.seal_field(id, Field::Secret, &model::encode_secret(&secret));
         store::insert_item(&self.conn, id, &meta_ct, &secret_ct, now_ms())?;
+        self.reindex(id)?;
         Ok(id)
     }
 
@@ -376,7 +384,7 @@ impl Vault {
         }
         store::update_content(&tx, id, &meta_ct, &secret_ct, now)?;
         tx.commit()?;
-        Ok(())
+        self.reindex(id)
     }
 
     /// Запись без секретов.
@@ -415,7 +423,9 @@ impl Vault {
             return Ok(());
         }
         let now = now_ms();
-        store::set_deleted(&self.conn, id, Some(now), now)
+        store::set_deleted(&self.conn, id, Some(now), now)?;
+        self.index.remove(id);
+        Ok(())
     }
 
     /// Возвращает запись из корзины. Для записи не в корзине ничего не делает.
@@ -424,7 +434,8 @@ impl Vault {
         if row.deleted_at.is_none() {
             return Ok(());
         }
-        store::set_deleted(&self.conn, id, None, now_ms())
+        store::set_deleted(&self.conn, id, None, now_ms())?;
+        self.reindex(id)
     }
 
     /// Удаляет запись из корзины навсегда, вместе с историей.
@@ -454,7 +465,78 @@ impl Vault {
     /// Отмечает, что запись использовали (скопировали пароль и т. п.).
     pub fn record_use(&mut self, id: ItemId) -> Result<()> {
         self.row(id)?;
-        store::record_use(&self.conn, id, now_ms())
+        let now = now_ms();
+        store::record_use(&self.conn, id, now)?;
+        self.index.record_use(id, now);
+        Ok(())
+    }
+
+    /// Ищет записи вне корзины. Синтаксис запроса описан в модуле [`search`].
+    pub fn search(&self, query: &str, options: &SearchOptions) -> SearchResult {
+        self.index.search(query, options)
+    }
+
+    /// Теги записей вне корзины с числом записей, самые частые первыми.
+    pub fn tags(&self) -> Vec<TagCount> {
+        self.index.tags().to_vec()
+    }
+
+    /// Переименовывает тег во всех записях, в том числе в корзине. Если тег с новым
+    /// именем уже есть, теги сливаются. В заметках меняется и `#тег` в тексте.
+    /// Время изменения записей не меняется и в историю они не попадают.
+    /// Возвращает число изменённых записей.
+    pub fn rename_tag(&mut self, from: &str, to: &str) -> Result<usize> {
+        let to = model::parse_tag(to)?;
+        self.retag(from, Some(&to))
+    }
+
+    /// Убирает тег из всех записей, в том числе из корзины. В заметках `#тег`
+    /// превращается в обычное слово, чтобы тег не вернулся при следующем сохранении.
+    /// Возвращает число изменённых записей.
+    pub fn delete_tag(&mut self, tag: &str) -> Result<usize> {
+        self.retag(tag, None)
+    }
+
+    fn retag(&mut self, from: &str, to: Option<&str>) -> Result<usize> {
+        let from = model::parse_tag(from)?.to_lowercase();
+        let mut rows = store::list_items(&self.conn, false)?;
+        rows.extend(store::list_items(&self.conn, true)?);
+
+        let mut changed = Vec::new();
+        for row in &rows {
+            let old = match self.decrypt_meta(row) {
+                Ok(meta) => meta,
+                // Повреждённые записи не трогаем: их и так нельзя открыть.
+                Err(Error::Damaged(_) | Error::Corrupted(_) | Error::UnsupportedVersion) => {
+                    continue;
+                }
+                Err(err) => return Err(err),
+            };
+            let mut meta = old.clone();
+            retag_meta(&mut meta, &from, to);
+            meta.normalize()?;
+            if meta != old {
+                let meta_ct = self.seal_field(row.id, Field::Meta, &model::encode_meta(&meta));
+                changed.push((row.id, meta_ct));
+            }
+        }
+
+        let tx = self.conn.transaction()?;
+        for (id, meta_ct) in &changed {
+            store::update_meta(&tx, *id, meta_ct)?;
+        }
+        tx.commit()?;
+        for (id, _) in &changed {
+            self.reindex(*id)?;
+        }
+        Ok(changed.len())
+    }
+
+    /// Обновляет запись в поисковом индексе после изменения в файле.
+    fn reindex(&mut self, id: ItemId) -> Result<()> {
+        let item = self.item(id)?;
+        self.index.upsert(item);
+        Ok(())
     }
 
     fn row(&self, id: ItemId) -> Result<ItemRow> {
@@ -532,6 +614,27 @@ fn check_password(password: &str) -> Result<()> {
 fn sync_has_totp(meta: &mut ItemMeta, secret: &ItemSecret) {
     if let ItemMeta::Login(login) = meta {
         login.has_totp = !secret.totp.is_empty();
+    }
+}
+
+/// Меняет тег `from` (в нижнем регистре) на `to` или убирает его.
+fn retag_meta(meta: &mut ItemMeta, from: &str, to: Option<&str>) {
+    let (tags, body) = match meta {
+        ItemMeta::Login(m) => (&mut m.tags, None),
+        ItemMeta::Note(m) => (&mut m.tags, Some(&mut m.body)),
+    };
+    if let Some(i) = tags.iter().position(|t| t.to_lowercase() == from) {
+        match to {
+            Some(to) => to.clone_into(&mut tags[i]),
+            None => {
+                tags.remove(i);
+            }
+        }
+    }
+    if let Some(body) = body
+        && let Some(new) = search::rewrite_hashtags(body, from, to)
+    {
+        *body = new;
     }
 }
 

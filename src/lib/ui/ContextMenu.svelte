@@ -106,7 +106,8 @@
         <button
           type="button"
           id="menu-item-{i}"
-          role="menuitem"
+          role={entry.checked === undefined ? 'menuitem' : 'menuitemradio'}
+          aria-checked={entry.checked}
           class="mi"
           class:active={i === active}
           class:danger={entry.danger}
@@ -115,6 +116,11 @@
           onclick={() => run(entry)}
           onmouseenter={() => (active = i)}
         >
+          {#if entry.checked !== undefined}
+            <span class="check">
+              {#if entry.checked}<Icon name="check" size={16} />{/if}
+            </span>
+          {/if}
           {#if entry.icon}<Icon name={entry.icon} />{/if}
           <span class="ellipsis">{entry.label}</span>
           {#if entry.shortcut}<span class="shortcut">{entry.shortcut}</span>{/if}
@@ -138,6 +144,13 @@
     max-width: calc(100vw - 16px);
     padding: 4px;
     outline: 0;
+  }
+
+  .check {
+    display: inline-flex;
+    flex: none;
+    width: 16px;
+    color: var(--accent);
   }
 
   .separator {

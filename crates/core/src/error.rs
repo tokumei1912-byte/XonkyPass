@@ -120,6 +120,9 @@ pub enum Invalid {
     #[error("у дополнительного поля нет названия")]
     EmptyFieldName,
 
+    #[error("пустой тег")]
+    EmptyTag,
+
     #[error("нельзя изменить тип записи")]
     KindChanged,
 

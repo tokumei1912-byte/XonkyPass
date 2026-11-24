@@ -302,6 +302,16 @@ pub fn normalize_tag(tag: &str) -> String {
         .join("-")
 }
 
+/// Тег, введённый отдельно от записи: например, новое имя при переименовании.
+pub(crate) fn parse_tag(tag: &str) -> Result<String, Invalid> {
+    let tag = normalize_tag(tag);
+    if tag.is_empty() {
+        return Err(Invalid::EmptyTag);
+    }
+    check_len("tags", &tag, limits::TAG)?;
+    Ok(tag)
+}
+
 fn normalize_tags(tags: &[String]) -> Result<Vec<String>, Invalid> {
     let tags: Vec<String> = tags.iter().map(|t| normalize_tag(t)).collect();
     normalize_list(&tags, "tags", limits::TAG, limits::TAGS)

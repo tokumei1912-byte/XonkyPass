@@ -9,6 +9,7 @@ pub mod app;
 pub mod clipboard;
 pub mod generator;
 pub mod items;
+pub mod search;
 pub mod settings;
 pub mod shell;
 pub mod vault;

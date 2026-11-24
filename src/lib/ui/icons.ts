@@ -80,6 +80,12 @@ export const icons = {
     ['path', { d: 'M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20' }],
     ['path', { d: 'M2 12h20' }],
   ],
+  hash: [
+    ['path', { d: 'M4 9h16' }],
+    ['path', { d: 'M4 15h16' }],
+    ['path', { d: 'M10 3 8 21' }],
+    ['path', { d: 'M16 3l-2 18' }],
+  ],
   heading: [
     ['path', { d: 'M6 12h12' }],
     ['path', { d: 'M6 20V4' }],
@@ -229,6 +235,12 @@ export const icons = {
     ['path', { d: 'M14 17H5' }],
     ['circle', { cx: '17', cy: '17', r: '3' }],
     ['circle', { cx: '7', cy: '7', r: '3' }],
+  ],
+  sort: [
+    ['path', { d: 'm21 16-4 4-4-4' }],
+    ['path', { d: 'M17 20V4' }],
+    ['path', { d: 'm3 8 4-4 4 4' }],
+    ['path', { d: 'M7 4v16' }],
   ],
   star: [
     [

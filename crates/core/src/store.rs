@@ -265,6 +265,16 @@ pub(crate) fn update_content(
     expect_one(changed)
 }
 
+/// Меняет только метаданные, не трогая время изменения: для служебных правок
+/// вроде переименования тега.
+pub(crate) fn update_meta(conn: &Connection, id: ItemId, meta: &[u8]) -> Result<()> {
+    let changed = conn.execute(
+        "UPDATE items SET meta = ?2, revision = revision + 1 WHERE id = ?1",
+        params![id.as_bytes(), meta],
+    )?;
+    expect_one(changed)
+}
+
 pub(crate) fn set_deleted(
     conn: &Connection,
     id: ItemId,

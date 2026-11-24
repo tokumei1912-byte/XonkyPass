@@ -49,6 +49,10 @@ export const tauriBackend: Backend = {
   trashEmpty: () => call('trash_empty'),
   itemCopy: (id, target) => call('item_copy', { id, target }),
 
+  itemsSearch: (query, options) => call('items_search', { query, options }),
+  tagRename: (from, to) => call('tag_rename', { from, to }),
+  tagDelete: (tag) => call('tag_delete', { tag }),
+
   generatePassword: (options) => call('generate_password', { options }),
   generatePassphrase: (options) => call('generate_passphrase', { options }),
   passwordStrength: (password, inputs) => call('password_strength', { password, inputs }),

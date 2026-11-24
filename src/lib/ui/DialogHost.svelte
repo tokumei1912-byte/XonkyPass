@@ -1,9 +1,12 @@
 <script lang="ts">
   import Dialog from './Dialog.svelte';
   import { dialogs } from './overlays.svelte';
+  import PromptBody from './PromptBody.svelte';
+
+  const formId = $props.id();
 </script>
 
-{#if dialogs.current}
+{#if dialogs.current?.kind === 'confirm'}
   {@const current = dialogs.current}
   <Dialog title={current.title} onclose={() => dialogs.close(false)}>
     <p>{current.message}</p>
@@ -27,6 +30,17 @@
       >
         {current.cancel ?? 'Отмена'}
       </button>
+    {/snippet}
+  </Dialog>
+{:else if dialogs.current?.kind === 'prompt'}
+  {@const current = dialogs.current}
+  <Dialog title={current.title} onclose={() => dialogs.close(false)}>
+    {#key current}
+      <PromptBody prompt={current} {formId} />
+    {/key}
+    {#snippet actions()}
+      <button type="submit" class="btn accent" form={formId}>{current.confirm}</button>
+      <button type="button" class="btn" onclick={() => dialogs.close(false)}>Отмена</button>
     {/snippet}
   </Dialog>
 {/if}

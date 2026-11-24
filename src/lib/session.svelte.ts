@@ -1,7 +1,15 @@
 // Состояние панели: открыто ли хранилище, записи и стек экранов.
 
-import { api, type ItemId, type ItemKind, type ItemSummary, type VaultStatus } from './api';
+import {
+  api,
+  type ItemId,
+  type ItemKind,
+  type ItemSummary,
+  type SortOrder,
+  type VaultStatus,
+} from './api';
 import { countTags } from './items';
+import { loadSort, saveSort } from './search';
 import { dialogs, menu, toasts } from './ui/overlays.svelte';
 
 /** Этап жизни хранилища — какой экран показывать вместо списка. */
@@ -23,6 +31,8 @@ export type Screen =
   /** `id: null` — новая запись. */
   | { name: 'edit'; id: ItemId | null; kind: ItemKind }
   | { name: 'trash' }
+  /** Все теги: переименование, слияние, удаление. */
+  | { name: 'tags' }
   | { name: 'settings' }
   | { name: 'change-password' }
   /** Новый ключ восстановления из настроек. */
@@ -48,6 +58,8 @@ class Session {
   /** `all`, `favorites` или тег. */
   filter = $state<ListFilter>({ kind: 'all' });
   selected = $state<ItemId | null>(null);
+  /** Порядок списка; запоминается между запусками. */
+  sort = $state<SortOrder>(loadSort());
 
   screen = $derived(this.stack[this.stack.length - 1] ?? HOME);
   tags = $derived(countTags(this.items));
@@ -112,6 +124,18 @@ class Session {
     this.items = active.items;
     this.damaged = active.damaged;
     this.trashCount = trash.items.length;
+  }
+
+  setSort(sort: SortOrder): void {
+    this.sort = sort;
+    saveSort(sort);
+  }
+
+  /** Тег переименовали (`to`) или удалили (`null`): фильтр по нему следует за ним. */
+  retagged(from: string, to: string | null): void {
+    const filter = this.filter;
+    if (filter.kind !== 'tag' || filter.tag.toLowerCase() !== from.toLowerCase()) return;
+    this.filter = to === null ? { kind: 'all' } : { kind: 'tag', tag: to };
   }
 
   item(id: ItemId): ItemSummary | undefined {

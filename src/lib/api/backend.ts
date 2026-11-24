@@ -11,6 +11,8 @@ import type {
   PassphraseOptions,
   PasswordOptions,
   Scope,
+  SearchOptions,
+  SearchResult,
   Settings,
   Strength,
   UpdateCheck,
@@ -62,6 +64,13 @@ export interface Backend {
   trashEmpty(): Promise<number>;
   /** Копирует поле в буфер, не передавая его в интерфейс. */
   itemCopy(id: ItemId, target: CopyTarget): Promise<Copied>;
+
+  /** Поиск вне корзины: слова, `#тег`, `is:login`, `is:note`, `is:fav`, `has:totp`. */
+  itemsSearch(query: string, options: SearchOptions): Promise<SearchResult>;
+  /** Переименовывает тег везде, включая корзину; в существующий — сливает. Число записей. */
+  tagRename(from: string, to: string): Promise<number>;
+  /** Убирает тег из всех записей. Число изменённых записей. */
+  tagDelete(tag: string): Promise<number>;
 
   generatePassword(options: PasswordOptions): Promise<string>;
   generatePassphrase(options: PassphraseOptions): Promise<string>;

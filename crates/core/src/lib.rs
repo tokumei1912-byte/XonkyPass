@@ -41,6 +41,7 @@ pub mod kdf;
 mod keyslot;
 mod model;
 mod recovery;
+pub mod search;
 mod store;
 mod vault;
 
@@ -50,6 +51,7 @@ pub use model::{
     CustomField, ItemId, ItemKind, ItemMeta, ItemSecret, LoginMeta, NoteMeta, limits, normalize_tag,
 };
 pub use recovery::RecoveryKey;
+pub use search::{SearchOptions, SearchResult, SortOrder, TagCount};
 pub use vault::{HISTORY_LIMIT, HistoryEntry, ItemList, ItemSummary, Scope, UnlockMethod, Vault};
 
 /// Версия формата хранилища. Входит в связанные данные каждого шифртекста.

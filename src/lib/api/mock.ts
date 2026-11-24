@@ -7,6 +7,7 @@
 
 import type { Backend, Unsubscribe } from './backend';
 import { ApiError } from './errors';
+import { normalizeTag, retag, searchItems } from './mock-search';
 import type {
   Copied,
   CopyTarget,
@@ -268,6 +269,44 @@ export function createMockBackend(scenario: MockScenario = 'locked'): Backend {
         }
       }
       return removed;
+    },
+
+    async itemsSearch(query, options) {
+      requireUnlocked();
+      await sleep(5);
+      const active = [...items.values()]
+        .map((i) => i.summary)
+        .filter((s) => s.deleted_at === null)
+        .sort((a, b) => a.id.localeCompare(b.id));
+      return searchItems(active, query, options);
+    },
+
+    async tagRename(from, to) {
+      requireUnlocked();
+      const next = normalizeTag(to);
+      if (!next || !normalizeTag(from)) throw new ApiError('invalid', 'пустой тег');
+      if (next.length > 64) throw new ApiError('invalid', 'поле «tags» длиннее 64 символов');
+      let changed = 0;
+      for (const item of items.values()) {
+        if (retag(item.summary.meta, normalizeTag(from), next)) {
+          item.summary.revision += 1;
+          changed += 1;
+        }
+      }
+      return changed;
+    },
+
+    async tagDelete(tag) {
+      requireUnlocked();
+      if (!normalizeTag(tag)) throw new ApiError('invalid', 'пустой тег');
+      let changed = 0;
+      for (const item of items.values()) {
+        if (retag(item.summary.meta, normalizeTag(tag), null)) {
+          item.summary.revision += 1;
+          changed += 1;
+        }
+      }
+      return changed;
     },
 
     async itemCopy(id, target) {

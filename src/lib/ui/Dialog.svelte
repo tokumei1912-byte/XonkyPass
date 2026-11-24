@@ -1,3 +1,8 @@
+<script lang="ts" module>
+  /** Куда вернуть фокус после диалога (по элементу диалога). */
+  const returnTargets = new WeakMap<HTMLElement, HTMLElement | null>();
+</script>
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { fade, scale } from 'svelte/transition';
@@ -20,12 +25,28 @@
 
   $effect(() => {
     if (!box) return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const self = box;
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Диалог сразу за другим (ввод → подтверждение): фокус потом вернётся туда,
+    // откуда открыли первый.
+    const outer = active?.closest<HTMLElement>('[role="dialog"]');
+    const previous = outer ? (returnTargets.get(outer) ?? null) : active;
+    returnTargets.set(self, previous);
+
     const target =
-      box.querySelector<HTMLElement>('[data-autofocus]') ??
-      box.querySelector<HTMLElement>(FOCUSABLE);
-    (target ?? box).focus();
-    return () => previous?.focus();
+      self.querySelector<HTMLElement>('[data-autofocus]') ??
+      self.querySelector<HTMLElement>(FOCUSABLE);
+    (target ?? self).focus();
+
+    return () => {
+      returnTargets.delete(self);
+      // Старый диалог исчезает после анимации — фокус уже может быть в новом.
+      const now = document.activeElement;
+      if (now && now !== document.body && !self.contains(now)) return;
+      // Элемента уже нет (например, чипа удалённого тега) — фокус в поле поиска экрана.
+      const fallback = document.querySelector<HTMLElement>('[data-return-focus]');
+      (previous?.isConnected ? previous : fallback)?.focus();
+    };
   });
 
   function onkeydown(e: KeyboardEvent) {

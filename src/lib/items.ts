@@ -1,8 +1,7 @@
-// Подписи и отбор записей для списка.
+// Подписи записей, названия по умолчанию, теги.
 
 import type { ItemSummary } from './api';
 import { plainText } from './markdown';
-import type { ListFilter } from './session.svelte';
 
 /** Вторая строка в списке: «логин · сайт» или начало заметки. */
 export function subtitle(item: ItemSummary): string {
@@ -15,36 +14,6 @@ export function subtitle(item: ItemSummary): string {
   }
   const place = meta.urls[0] ?? meta.apps[0];
   return [meta.username, place].filter(Boolean).join(' · ') || 'Без логина';
-}
-
-/** Простой поиск по подстроке. Нечёткий поиск с ранжированием — этап 3. */
-export function matches(item: ItemSummary, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const { meta } = item;
-  const fields: string[] = [meta.title, ...meta.tags];
-  if (meta.kind === 'login') fields.push(meta.username, ...meta.urls, ...meta.apps);
-  else fields.push(meta.body);
-  return fields.some((field) => field.toLowerCase().includes(q));
-}
-
-export function passesFilter(item: ItemSummary, filter: ListFilter): boolean {
-  switch (filter.kind) {
-    case 'all':
-      return true;
-    case 'favorites':
-      return item.meta.favorite;
-    case 'tag': {
-      const tag = filter.tag.toLowerCase();
-      return item.meta.tags.some((t) => t.toLowerCase() === tag);
-    }
-  }
-}
-
-const collator = new Intl.Collator('ru', { sensitivity: 'base', numeric: true });
-
-export function byTitle(a: ItemSummary, b: ItemSummary): number {
-  return collator.compare(a.meta.title, b.meta.title);
 }
 
 /** Название по сайту или приложению, если его не ввели: `github.com` → `Github`. */

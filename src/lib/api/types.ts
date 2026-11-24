@@ -69,6 +69,37 @@ export interface ItemList {
   damaged: ItemId[];
 }
 
+/** Порядок результатов поиска. */
+export type SortOrder =
+  /** По совпадению; пустой запрос — сначала избранное и недавние. */
+  | 'relevance'
+  | 'title'
+  /** Недавно изменённые первыми. */
+  | 'updated'
+  /** Часто используемые первыми. */
+  | 'used';
+
+export interface SearchOptions {
+  sort: SortOrder;
+  /** Сколько записей вернуть; 0 — все. */
+  limit: number;
+}
+
+export interface SearchResult {
+  /** Не больше `limit` записей. */
+  items: ItemSummary[];
+  /** Сколько всего записей подходит под запрос. */
+  total: number;
+  /** Слова запроса в другой раскладке, если нашлось только по ним. */
+  layout_fixed: string | null;
+  /**
+   * Запрос без слов по совпадению: первые `favorites` записей — избранные,
+   * за ними `recent` недавних, дальше остальные по названию. Иначе 0.
+   */
+  favorites: number;
+  recent: number;
+}
+
 export interface VaultStatus {
   /** Есть ли файл хранилища. Нет — первый запуск. */
   exists: boolean;
