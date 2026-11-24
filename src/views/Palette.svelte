@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../lib/ui/Icon.svelte';
   import { hideCurrentWindow } from '../lib/window';
 
   function onKeydown(e: KeyboardEvent) {
@@ -8,9 +9,17 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<main>
-  <input type="search" placeholder="Поиск появится на этапе 3" disabled />
-  <p class="muted"><kbd>Esc</kbd> — закрыть</p>
+<main data-tauri-drag-region>
+  <div class="inp search">
+    <Icon name="search" />
+    <input
+      type="search"
+      placeholder="Быстрый поиск появится на этапе 3"
+      aria-label="Поиск"
+      disabled
+    />
+  </div>
+  <p class="muted small"><kbd>Esc</kbd> — закрыть</p>
 </main>
 
 <style>
@@ -20,23 +29,16 @@
     gap: var(--space-3);
     height: 100%;
     padding: var(--space-4);
-    border: 1px solid var(--border);
   }
 
-  input {
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
+  .search {
+    height: 44px;
+    padding-left: 12px;
     font-size: 16px;
   }
 
-  .muted {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 12px;
+  .search :global(svg) {
+    flex: none;
+    color: var(--text-2);
   }
 </style>

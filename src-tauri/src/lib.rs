@@ -28,6 +28,12 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::app::app_info,
+            commands::app::appearance,
+            commands::app::update_check,
+            commands::app::update_install,
+            commands::shell::open_url,
+            commands::shell::reveal_vault,
+            commands::shell::recovery_key_save,
             commands::vault::vault_status,
             commands::vault::vault_create,
             commands::vault::vault_unlock,
@@ -62,10 +68,11 @@ pub fn run() {
             let settings_path = paths::settings_path(app.handle())?;
             tracing::info!(path = %vault_path.display(), "файл хранилища");
             let settings = settings::load(&settings_path);
+            let theme = settings.theme;
             app.manage(AppState::new(vault_path, settings_path, settings));
             app.manage(clipboard::Clipboard::default());
 
-            window_ctl::prepare(app.handle());
+            window_ctl::prepare(app.handle(), theme);
             clipboard::init(app.handle());
             tray::create(app.handle())?;
             updater::start(app.handle());

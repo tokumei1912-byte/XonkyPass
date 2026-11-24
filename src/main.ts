@@ -1,6 +1,10 @@
 import { mount } from 'svelte';
 import App from './App.svelte';
 import './app.css';
+import { initAppearance } from './lib/appearance';
+
+// Тема и акцент — до первой отрисовки, чтобы окно не мигнуло светлым.
+initAppearance();
 
 // В релизе отключаем браузерное контекстное меню («Обновить», «Просмотреть код» и т. п.).
 if (import.meta.env.PROD) {

@@ -1,35 +1,149 @@
-/* Базовые токены. Полная дизайн-система — на этапе 2. */
-:root {
-  color-scheme: light dark;
+/*
+ * Дизайн-система XonkyPass: токены и базовые элементы.
+ *
+ * Тема задаётся атрибутом `data-theme` на <html> (`light` или `dark`), фон Mica —
+ * атрибутом `data-mica`. Цвет акцента Windows приходит в `--accent-light` и
+ * `--accent-dark` (см. `lib/appearance.svelte.ts`); без него — стандартный синий.
+ *
+ * Сложные элементы (поле пароля, ввод тегов, меню, диалоги, тосты) — компоненты
+ * в `lib/ui/`. Здесь только то, что удобнее как класс: кнопки, поля, карточки, чипы.
+ */
 
+:root {
+  color-scheme: light;
+
+  /* Шрифты */
   --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --font-display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
 
-  --bg: #f3f3f3;
-  --surface: #ffffff;
-  --border: rgb(0 0 0 / 0.08);
-  --text: #1b1b1b;
-  --text-muted: #5f5f5f;
-  --accent: #0067c0;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 15px;
+  --text-xl: 20px;
+  --text-2xl: 22px;
 
-  --radius: 8px;
+  /* Отступы */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
+  --space-8: 32px;
+
+  /* Радиусы */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Высоты элементов управления */
+  --control-sm: 28px;
+  --control: 32px;
+  --control-lg: 36px;
+
+  /* Движение */
+  --ease: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --duration-fast: 100ms;
+  --duration: 180ms;
+
+  /* Цвета: светлая тема */
+  --bg: #f3f3f3;
+  --surface: #ffffff;
+  --surface-2: #f9f9f9;
+  /* Всплывающие слои (меню, диалоги, тосты) всегда непрозрачные. */
+  --popup: #ffffff;
+  --popup-2: #f3f3f3;
+  --hover: rgb(0 0 0 / 0.05);
+  --pressed: rgb(0 0 0 / 0.08);
+  --border: rgb(0 0 0 / 0.09);
+  --border-strong: rgb(0 0 0 / 0.17);
+  --text: #1b1b1b;
+  --text-2: #5c5c5c;
+  --text-3: #8a8a8a;
+  --accent: var(--accent-light, #0067c0);
+  --on-accent: #ffffff;
+  --accent-hover: color-mix(in srgb, var(--accent) 88%, #ffffff);
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --danger: #c42b1c;
+  --danger-fill: #c42b1c;
+  --danger-soft: rgb(196 43 28 / 0.1);
+  --ok: #0f7b0f;
+  --warn: #8a5300;
+  --warn-soft: rgb(157 93 0 / 0.1);
+  --scrim: rgb(0 0 0 / 0.3);
+  --focus: #1b1b1b;
+  --shadow: 0 8px 24px rgb(0 0 0 / 0.14), 0 2px 6px rgb(0 0 0 / 0.08);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.14);
+
+  /* Цвета аватаров записей: приглушённые, белый текст читается на всех. */
+  --avatar-1: #24292f;
+  --avatar-2: #b03a2e;
+  --avatar-3: #1f5fa8;
+  --avatar-4: #2f6f4f;
+  --avatar-5: #4a5568;
+  --avatar-6: #0e6b74;
+  --avatar-7: #1a6fa3;
+  --avatar-8: #6b4fa0;
+  --avatar-9: #a3366b;
+  --avatar-10: #8a5a00;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #202020;
+  --surface: #2c2c2c;
+  --surface-2: #323232;
+  --popup: #2c2c2c;
+  --popup-2: #202020;
+  --hover: rgb(255 255 255 / 0.06);
+  --pressed: rgb(255 255 255 / 0.04);
+  --border: rgb(255 255 255 / 0.09);
+  --border-strong: rgb(255 255 255 / 0.2);
+  --text: #ffffff;
+  --text-2: #c5c5c5;
+  --text-3: #8f8f8f;
+  --accent: var(--accent-dark, #4cc2ff);
+  --on-accent: #000000;
+  --accent-hover: color-mix(in srgb, var(--accent) 88%, #000000);
+  --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
+  --danger: #ff99a4;
+  --danger-fill: #c42b1c;
+  --danger-soft: rgb(255 153 164 / 0.12);
+  --ok: #6ccb5f;
+  --warn: #fce100;
+  --warn-soft: rgb(252 225 0 / 0.1);
+  --scrim: rgb(0 0 0 / 0.5);
+  --focus: #ffffff;
+  --shadow: 0 8px 24px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+/* Под окном Mica: фон прозрачный, слои полупрозрачные (как в WinUI 3). */
+:root[data-mica] {
+  --bg: transparent;
+  --surface: rgb(255 255 255 / 0.7);
+  --surface-2: rgb(255 255 255 / 0.5);
+  --popup: #f9f9f9;
+}
+
+:root[data-mica][data-theme='dark'] {
+  --surface: rgb(255 255 255 / 0.06);
+  --surface-2: rgb(255 255 255 / 0.08);
+  --popup: #2c2c2c;
+}
+
+@media (prefers-reduced-motion: reduce) {
   :root {
-    --bg: #202020;
-    --surface: #2b2b2b;
-    --border: rgb(255 255 255 / 0.08);
-    --text: #ffffff;
-    --text-muted: #a0a0a0;
-    --accent: #4cc2ff;
+    --duration-fast: 0ms;
+    --duration: 0ms;
   }
 }
+
+/* --- Основа -------------------------------------------------------------------- */
 
 *,
 *::before,
@@ -45,23 +159,495 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-md);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  cursor: default;
+}
+
+/* Без Mica окно прозрачное только по краям скруглений — рамку рисуем сами. */
+:root:not([data-mica]) #app {
+  border: 1px solid var(--border-strong);
 }
 
 #app {
   height: 100%;
 }
 
-kbd {
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--accent);
+}
+
+input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 4px solid transparent;
+  border-radius: 6px;
+  background: var(--border-strong) padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  border-width: 3px;
+  background-color: var(--text-3);
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.muted {
+  color: var(--text-2);
+}
+
+.small {
+  font-size: var(--text-sm);
+}
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+kbd,
+.kbd {
   display: inline-block;
-  padding: 1px 6px;
-  border: 1px solid var(--border);
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
   border-bottom-width: 2px;
-  border-radius: 4px;
-  background: var(--surface);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--text-xs);
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+code {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--hover);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+/* --- Кнопки -------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-md);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.btn:hover {
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.btn:active {
+  background: var(--hover);
+  color: var(--text-2);
+}
+
+.btn.accent {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.btn.accent:hover {
+  background: var(--accent-hover);
+}
+
+.btn.accent:active {
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.btn.danger {
+  border-color: transparent;
+  background: var(--danger-fill);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.btn.danger:hover {
+  background: color-mix(in srgb, var(--danger-fill) 88%, #ffffff);
+}
+
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.btn.ghost:hover {
+  background: var(--hover);
+}
+
+.btn.ghost:active {
+  background: var(--pressed);
+}
+
+.btn.sm {
+  height: var(--control-sm);
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.btn.lg {
+  height: var(--control-lg);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Кнопка-иконка */
+.ib {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--control);
+  height: var(--control);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.ib:hover {
+  background: var(--hover);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.ib:active {
+  background: var(--pressed);
+}
+
+.ib.sm {
+  width: var(--control-sm);
+  height: var(--control-sm);
+}
+
+.ib.on {
+  color: var(--accent);
+}
+
+.ib:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* --- Поля ---------------------------------------------------------------------- */
+
+.lbl {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Обёртка поля: внутри <input> и кнопки-иконки. Фокус — полоса акцента снизу. */
+.inp {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-lg);
+  padding: 0 2px 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: text;
+}
+
+.inp:hover {
+  background: var(--surface-2);
+}
+
+.inp:focus-within {
+  border-bottom: 2px solid var(--accent);
+  background: var(--surface);
+}
+
+.inp.invalid {
+  border-bottom: 2px solid var(--danger);
+}
+
+.inp input,
+.inp textarea {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.inp input[type='search']::-webkit-search-cancel-button {
+  display: none;
+}
+
+.inp .ib {
+  width: 30px;
+  height: 30px;
+}
+
+textarea.area {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--radius);
+  outline: 0;
+  background: var(--surface);
+  resize: none;
+  user-select: text;
+}
+
+textarea.area:focus {
+  border-bottom: 2px solid var(--accent);
+}
+
+select.dd {
+  height: var(--control);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--radius);
+  outline-offset: 1px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+select.dd option {
+  background: var(--popup);
+  color: var(--text);
+}
+
+.field-hint {
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+
+.field-error {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+/* --- Карточки, чипы, меню ----------------------------------------------------- */
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: none;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--surface-2);
+}
+
+.chip.on {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Пункт меню или подсказки */
+.mi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--control);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mi:hover,
+.mi.active {
+  background: var(--hover);
+}
+
+.mi .shortcut {
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+
+.mi.danger {
+  color: var(--danger);
+}
+
+.mi:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.popup {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--popup);
+  box-shadow: var(--shadow);
+}
+
+/* Предупреждение или подсказка в тексте экрана */
+.note {
+  display: flex;
+  gap: 10px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--hover);
+  font-size: 13px;
+}
+
+.note.warn {
+  background: var(--warn-soft);
+}
+
+.note.warn > svg {
+  flex: none;
+  color: var(--warn);
+}
+
+.note.danger {
+  background: var(--danger-soft);
+}
+
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  :root:not([data-mica]) #app {
+    border: 0;
+  }
 }

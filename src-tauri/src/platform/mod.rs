@@ -5,6 +5,8 @@
 
 use std::fmt;
 
+use serde::Serialize;
+
 #[cfg(windows)]
 pub mod clipboard;
 #[cfg(not(windows))]
@@ -12,7 +14,26 @@ pub mod clipboard;
 pub mod clipboard;
 
 #[cfg(windows)]
+pub mod appearance;
+#[cfg(not(windows))]
+mod desktop_stub;
+#[cfg(windows)]
+pub mod dialog;
+#[cfg(windows)]
+pub mod shell;
+#[cfg(not(windows))]
+pub use desktop_stub::{appearance, dialog, shell};
+
+#[cfg(windows)]
 mod window_style;
+
+/// Цвета акцента Windows для светлой и тёмной темы (`#rrggbb`): на светлом фоне
+/// темнее, на тёмном светлее.
+#[derive(Debug, Clone, Serialize)]
+pub struct Accent {
+    pub light: String,
+    pub dark: String,
+}
 
 #[cfg(windows)]
 pub use window_style::hide_from_alt_tab;

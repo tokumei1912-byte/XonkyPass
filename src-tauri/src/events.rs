@@ -5,3 +5,6 @@ pub const VAULT_LOCKED: &str = "vault://locked";
 
 /// Буфер обмена очищен: истекло время или хранилище заблокировали.
 pub const CLIPBOARD_CLEARED: &str = "clipboard://cleared";
+
+/// Настройки изменились; в событии — новые настройки (тема нужна обоим окнам).
+pub const SETTINGS_CHANGED: &str = "settings://changed";

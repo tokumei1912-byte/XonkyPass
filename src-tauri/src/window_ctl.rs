@@ -6,20 +6,53 @@
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow, Window};
 
 use crate::platform;
+use crate::settings::Theme;
 
 /// Панель со списком записей (у края экрана).
 pub const PANEL: &str = "panel";
 /// Палитра поиска и быстрого добавления (по центру экрана).
 pub const PALETTE: &str = "palette";
 
-/// Подготовка окон после создания.
-pub fn prepare(app: &AppHandle) {
+/// Включился ли у окон фон Mica. Без него интерфейс рисует непрозрачный фон сам.
+pub struct Backdrop {
+    pub mica: bool,
+}
+
+/// Подготовка окон после создания: стиль, тема и фон Mica.
+pub fn prepare(app: &AppHandle, theme: Theme) {
+    let mut mica = true;
     for label in [PANEL, PALETTE] {
-        match app.get_webview_window(label) {
-            Some(window) => platform::hide_from_alt_tab(&window),
-            None => tracing::error!(label, "окно не найдено"),
+        let Some(window) = app.get_webview_window(label) else {
+            tracing::error!(label, "окно не найдено");
+            mica = false;
+            continue;
+        };
+        platform::hide_from_alt_tab(&window);
+        set_theme(&window, theme);
+        if let Err(err) = platform::appearance::apply_mica(platform::window_handle(&window)) {
+            tracing::info!(label, %err, "фон Mica недоступен");
+            mica = false;
         }
     }
+    app.manage(Backdrop { mica });
+}
+
+/// Тема окон: от неё зависят оттенок Mica и `prefers-color-scheme` в интерфейсе.
+pub fn apply_theme(app: &AppHandle, theme: Theme) {
+    for label in [PANEL, PALETTE] {
+        if let Some(window) = app.get_webview_window(label) {
+            set_theme(&window, theme);
+        }
+    }
+}
+
+fn set_theme(window: &WebviewWindow, theme: Theme) {
+    let theme = match theme {
+        Theme::System => None,
+        Theme::Light => Some(tauri::Theme::Light),
+        Theme::Dark => Some(tauri::Theme::Dark),
+    };
+    log_err(window.label(), "set_theme", window.set_theme(theme));
 }
 
 pub fn show_panel(app: &AppHandle) {

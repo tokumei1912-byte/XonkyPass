@@ -2,11 +2,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { Backend } from './backend';
 import { toApiError } from './errors';
+import type { Settings } from './types';
 
 /** Имена событий — как в `src-tauri/src/events.rs`. */
 const EVENTS = {
   vaultLocked: 'vault://locked',
   clipboardCleared: 'clipboard://cleared',
+  settingsChanged: 'settings://changed',
 } as const;
 
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -20,6 +22,12 @@ async function call<T>(command: string, args?: Record<string, unknown>): Promise
 /** Настоящий бэкенд: команды Rust через IPC Tauri. */
 export const tauriBackend: Backend = {
   appInfo: () => call('app_info'),
+  appearance: () => call('appearance'),
+  updateCheck: () => call('update_check'),
+  updateInstall: () => call('update_install'),
+  openUrl: (url) => call('open_url', { url }),
+  revealVault: () => call('reveal_vault'),
+  recoveryKeySave: (key) => call('recovery_key_save', { key }),
 
   vaultStatus: () => call('vault_status'),
   vaultCreate: (password) => call('vault_create', { password }),
@@ -53,4 +61,6 @@ export const tauriBackend: Backend = {
 
   onVaultLocked: (handler) => listen(EVENTS.vaultLocked, () => handler()),
   onClipboardCleared: (handler) => listen(EVENTS.clipboardCleared, () => handler()),
+  onSettingsChanged: (handler) =>
+    listen<Settings>(EVENTS.settingsChanged, (event) => handler(event.payload)),
 };

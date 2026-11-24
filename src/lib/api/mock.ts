@@ -33,6 +33,7 @@ const CALL_DELAY_MS = 30;
 
 const LOCKED_EVENT = 'locked';
 const CLEARED_EVENT = 'cleared';
+const SETTINGS_EVENT = 'settings';
 
 interface StoredItem {
   summary: ItemSummary;
@@ -86,7 +87,35 @@ export function createMockBackend(scenario: MockScenario = 'locked'): Backend {
 
   return {
     async appInfo() {
-      return { name: 'XonkyPass', version: 'dev (mock)' };
+      return { name: 'XonkyPass', version: 'dev (mock)', auto_update: false };
+    },
+
+    async appearance() {
+      // `?accent=#rrggbb` — проверить чужой акцент без Windows.
+      const accent = new URLSearchParams(window.location.search).get('accent');
+      return { mica: false, accent: accent ? { light: accent, dark: accent } : null };
+    },
+
+    async updateCheck() {
+      return { status: 'disabled' };
+    },
+
+    async updateInstall() {},
+
+    async openUrl(url) {
+      console.info(`[mock] открыть сайт: ${url}`);
+    },
+
+    async revealVault() {
+      console.info('[mock] показать файл хранилища');
+    },
+
+    async recoveryKeySave(key) {
+      if (normalizeRecoveryKey(key).length !== 28) {
+        throw new ApiError('invalid_recovery_key', 'неверный формат ключа');
+      }
+      console.info('[mock] ключ восстановления сохранён в файл');
+      return true;
     },
 
     async vaultStatus() {
@@ -282,11 +311,17 @@ export function createMockBackend(scenario: MockScenario = 'locked'): Backend {
         throw new ApiError('invalid', 'очистка буфера — не дольше 600 секунд');
       }
       settings = { ...next };
+      events.dispatchEvent(new CustomEvent(SETTINGS_EVENT, { detail: { ...settings } }));
       return { ...settings };
     },
 
     onVaultLocked: (handler) => on(LOCKED_EVENT, handler),
     onClipboardCleared: (handler) => on(CLEARED_EVENT, handler),
+    onSettingsChanged: (handler) => {
+      const listener = (e: Event) => handler((e as CustomEvent<Settings>).detail);
+      events.addEventListener(SETTINGS_EVENT, listener);
+      return Promise.resolve(() => events.removeEventListener(SETTINGS_EVENT, listener));
+    },
   };
 }
 

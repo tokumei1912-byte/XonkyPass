@@ -24,7 +24,8 @@
         "resizable": true,
         "skipTaskbar": true,
         "alwaysOnTop": true,
-        "shadow": true
+        "shadow": true,
+        "transparent": true
       },
       {
         "label": "palette",
@@ -37,7 +38,8 @@
         "resizable": false,
         "skipTaskbar": true,
         "alwaysOnTop": true,
-        "shadow": true
+        "shadow": true,
+        "transparent": true
       }
     ],
     "security": {

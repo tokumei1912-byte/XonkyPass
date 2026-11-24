@@ -1,5 +1,6 @@
 import type {
   AppInfo,
+  Appearance,
   Copied,
   CopyTarget,
   ItemId,
@@ -12,6 +13,7 @@ import type {
   Scope,
   Settings,
   Strength,
+  UpdateCheck,
   VaultStatus,
 } from './types';
 
@@ -24,6 +26,17 @@ export type Unsubscribe = () => void;
  */
 export interface Backend {
   appInfo(): Promise<AppInfo>;
+  /** Фон Mica и акцент Windows. Акцент может смениться — спрашивать при показе окна. */
+  appearance(): Promise<Appearance>;
+  updateCheck(): Promise<UpdateCheck>;
+  /** Ставит скачанное обновление: приложение закроется и запустится новая версия. */
+  updateInstall(): Promise<void>;
+  /** Открывает сайт в браузере. Только http и https; `github.com` → `https://github.com`. */
+  openUrl(url: string): Promise<void>;
+  /** Показывает файл хранилища в Проводнике. */
+  revealVault(): Promise<void>;
+  /** Сохраняет ключ восстановления в файл через системное окно. `false` — отменили. */
+  recoveryKeySave(key: string): Promise<boolean>;
 
   vaultStatus(): Promise<VaultStatus>;
   /** Создаёт хранилище, открывает его и возвращает ключ восстановления. */
@@ -67,4 +80,6 @@ export interface Backend {
   onVaultLocked(handler: () => void): Promise<Unsubscribe>;
   /** Буфер обмена очищен по таймеру или при блокировке. */
   onClipboardCleared(handler: () => void): Promise<Unsubscribe>;
+  /** Настройки изменились (в любом окне). */
+  onSettingsChanged(handler: (settings: Settings) => void): Promise<Unsubscribe>;
 }

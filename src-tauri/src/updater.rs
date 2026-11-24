@@ -105,30 +105,54 @@ pub fn on_menu_click(app: &AppHandle) {
     });
 }
 
+/// Итог проверки обновлений.
+pub enum Checked {
+    UpToDate,
+    /// Проверка уже идёт.
+    Busy,
+    /// Новая версия скачана и проверена.
+    Ready(String),
+    Failed,
+}
+
 /// Проверяет наличие новой версии и скачивает её.
-async fn check(app: &AppHandle) {
+pub async fn check(app: &AppHandle) -> Checked {
     let updates = app.state::<Updates>();
-    if has_ready(app) || updates.busy.swap(true, Ordering::SeqCst) {
-        return;
+    if let Some(version) = ready_version(app) {
+        return Checked::Ready(version);
+    }
+    if updates.busy.swap(true, Ordering::SeqCst) {
+        return Checked::Busy;
     }
     updates.set_status(Status::Checking);
 
-    match download(app).await {
+    let checked = match download(app).await {
         Ok(Some(ready)) => {
-            tracing::info!(version = %ready.update.version, "обновление скачано и проверено");
-            updates.set_status(Status::Ready(&ready.update.version));
+            let version = ready.update.version.clone();
+            tracing::info!(%version, "обновление скачано и проверено");
+            updates.set_status(Status::Ready(&version));
             *updates.lock_ready() = Some(ready);
+            Checked::Ready(version)
         }
         Ok(None) => {
             tracing::info!("обновлений нет");
             updates.set_status(Status::UpToDate);
+            Checked::UpToDate
         }
         Err(err) => {
             tracing::warn!(%err, "не удалось проверить или скачать обновление");
             updates.set_status(Status::Failed);
+            Checked::Failed
         }
-    }
+    };
     updates.busy.store(false, Ordering::SeqCst);
+    checked
+}
+
+fn ready_version(app: &AppHandle) -> Option<String> {
+    let updates = app.state::<Updates>();
+    let ready = updates.lock_ready();
+    ready.as_ref().map(|ready| ready.update.version.clone())
 }
 
 async fn download(app: &AppHandle) -> tauri_plugin_updater::Result<Option<Ready>> {
@@ -166,7 +190,7 @@ fn has_ready(app: &AppHandle) -> bool {
 
 /// Устанавливает скачанное обновление. На Windows установщик закрывает приложение
 /// и после установки запускает новую версию.
-fn install_ready(app: &AppHandle) {
+pub fn install_ready(app: &AppHandle) {
     let updates = app.state::<Updates>();
     let Some(ready) = updates.lock_ready().take() else {
         return;

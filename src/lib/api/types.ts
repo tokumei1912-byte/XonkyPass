@@ -149,7 +149,28 @@ export const DEFAULT_SETTINGS: Settings = { clipboard_clear_secs: 20, theme: 'sy
 export interface AppInfo {
   name: string;
   version: string;
+  /** Обновления ставятся сами. В тестовых сборках — нет. */
+  auto_update: boolean;
 }
+
+/** Цвета акцента Windows (`#rrggbb`): на светлом фоне темнее, на тёмном светлее. */
+export interface Accent {
+  light: string;
+  dark: string;
+}
+
+export interface Appearance {
+  /** Под окном фон Mica: интерфейс рисует полупрозрачные слои вместо сплошного фона. */
+  mica: boolean;
+  /** `null` — стандартный синий. */
+  accent: Accent | null;
+}
+
+export type UpdateCheck =
+  | { status: 'disabled' }
+  | { status: 'up_to_date' }
+  | { status: 'busy' }
+  | { status: 'ready'; version: string };
 
 /** Пустые секреты для новой записи. */
 export function emptySecret(): ItemSecret {
