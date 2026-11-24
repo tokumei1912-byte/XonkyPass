@@ -1,15 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getAppInfo, type AppInfo } from '../lib/api/app';
+  import { api, errorText, type AppInfo } from '../lib/api';
   import { hideCurrentWindow } from '../lib/window';
 
   let info = $state<AppInfo | null>(null);
   let error = $state<string | null>(null);
 
   onMount(() => {
-    getAppInfo()
+    api
+      .appInfo()
       .then((value) => (info = value))
-      .catch((e: unknown) => (error = String(e)));
+      .catch((e: unknown) => (error = errorText(e)));
   });
 
   function onKeydown(e: KeyboardEvent) {

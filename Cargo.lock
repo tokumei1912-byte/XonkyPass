@@ -5894,12 +5894,14 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
  "windows",
  "xonkypass-core",
+ "zeroize",
 ]
 
 [[package]]
