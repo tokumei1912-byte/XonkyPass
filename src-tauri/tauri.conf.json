@@ -82,7 +82,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAyRkFDMDQ2REYxNUIwM0MKUldROHNCWGZSc0Q2QW4wQXJ2QlpsTFY2K1ZEWStrbWVSRVpPdTdEUC9naDdHenpMR2ZPTnhDNjIK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ1NjA4RTU2ODkzQTkyMjcKUldRbmtqcUpWbzVnUmJ5QURXaitQQ0VHN21HRGcxRWZ2eC81L2QvZ09vZnJMelRlbGs1d2dTRlkK",
       "endpoints": [
         "https://github.com/tokumei1912-byte/XonkyPass/releases/latest/download/latest.json"
       ],
