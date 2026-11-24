@@ -8,6 +8,9 @@ target/
 # Tauri
 src-tauri/gen/schemas/
 
+# Ключи подписи обновлений не коммитить
+*.key
+
 # Прочее
 *.log
 .DS_Store

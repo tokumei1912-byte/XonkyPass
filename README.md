@@ -51,9 +51,12 @@ Windows 10 22H2 или Windows 11, x64.
 
 Подробности — в [docs/PLAN.md](docs/PLAN.md#2-данные-и-шифрование).
 
-## Скачать сборку
+## Скачать
 
-Установщик собирается автоматически при каждом изменении: вкладка
+Последняя версия — на странице [Releases](https://github.com/tokumei1912-byte/XonkyPass/releases/latest).
+Достаточно установить один раз: дальше приложение **обновляется само** (см. [docs/UPDATES.md](docs/UPDATES.md)).
+
+Тестовые сборки веток (без автообновления): вкладка
 [Actions](https://github.com/tokumei1912-byte/XonkyPass/actions) → нужная сборка → раздел
 **Artifacts**. Подробнее и чек-листы проверки — в [docs/TESTING.md](docs/TESTING.md).
 

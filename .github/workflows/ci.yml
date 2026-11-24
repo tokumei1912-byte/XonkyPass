@@ -58,8 +58,20 @@ jobs:
   windows:
     name: Сборка (Windows)
     runs-on: windows-latest
+    env:
+      # Push в main собирает релиз: своя версия, подпись и автообновление.
+      # Сборки веток — тестовые, без автообновления.
+      RELEASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Версия релиза
+        id: version
+        if: env.RELEASE == 'true'
+        shell: bash
+        run: echo "version=$(node scripts/release-version.mjs ${{ github.run_number }})" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v7
         with:
@@ -86,7 +98,23 @@ jobs:
         run: cargo test --workspace
 
       - name: Установщик (NSIS)
+        if: env.RELEASE != 'true'
         run: npm run tauri build
+
+      - name: Установщик релиза (NSIS, подписанный)
+        if: env.RELEASE == 'true'
+        shell: bash
+        env:
+          XONKYPASS_AUTO_UPDATE: '1'
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ] || [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
+            echo "::error::Не заданы секреты TAURI_SIGNING_PRIVATE_KEY и TAURI_SIGNING_PRIVATE_KEY_PASSWORD (см. docs/UPDATES.md)"
+            exit 1
+          fi
+          # Напрямую через node: npm на Windows передаёт аргументы через cmd и портит кавычки JSON.
+          node node_modules/@tauri-apps/cli/tauri.js build --config '{"bundle":{"createUpdaterArtifacts":true}}'
 
       - uses: actions/upload-artifact@v7
         with:
@@ -94,3 +122,48 @@ jobs:
           path: target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 30
+
+      - uses: actions/upload-artifact@v7
+        if: env.RELEASE == 'true'
+        with:
+          name: release-files
+          path: |
+            target/release/bundle/nsis/*-setup.exe
+            target/release/bundle/nsis/*-setup.exe.sig
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Релиз на GitHub
+    needs: [checks, windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    env:
+      VERSION: ${{ needs.windows.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-files
+          path: release
+
+      - name: latest.json для автообновления
+        run: node scripts/updater-manifest.mjs "$VERSION" release "$GITHUB_REPOSITORY"
+
+      # Установленные приложения берут latest.json из последнего релиза.
+      - name: Публикация релиза
+        run: |
+          # Повторный запуск того же workflow пересоздаёт релиз с тем же номером.
+          gh release delete "v$VERSION" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "v$VERSION" release/* \
+            --target "$GITHUB_SHA" \
+            --title "XonkyPass $VERSION" \
+            --generate-notes \
+            --latest

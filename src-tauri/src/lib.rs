@@ -5,6 +5,7 @@ mod logging;
 mod paths;
 mod platform;
 mod tray;
+mod updater;
 mod window_ctl;
 
 use tauri::WindowEvent;
@@ -17,12 +18,14 @@ pub fn run() {
             tracing::info!("повторный запуск: показываем панель");
             window_ctl::show_panel(app);
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![commands::app_info])
         .setup(|app| {
             logging::init(app.handle());
             tracing::info!(version = env!("CARGO_PKG_VERSION"), "запуск XonkyPass");
             window_ctl::prepare(app.handle());
             tray::create(app.handle())?;
+            updater::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {

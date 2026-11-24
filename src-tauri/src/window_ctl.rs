@@ -47,6 +47,14 @@ pub fn toggle_panel(app: &AppHandle) {
     }
 }
 
+/// Видно ли сейчас хоть одно окно приложения.
+pub fn any_visible(app: &AppHandle) -> bool {
+    [PANEL, PALETTE]
+        .into_iter()
+        .filter_map(|label| app.get_webview_window(label))
+        .any(|window| window.is_visible().unwrap_or(false))
+}
+
 fn show(window: &WebviewWindow) {
     log_err(window.label(), "unminimize", window.unminimize());
     log_err(window.label(), "show", window.show());
