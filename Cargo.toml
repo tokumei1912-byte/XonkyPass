@@ -15,6 +15,24 @@ unsafe_op_in_unsafe_fn = "deny"
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 
+# Без оптимизаций Argon2 и шифрование работают в десятки раз медленнее:
+# разблокировка в `tauri dev` и тесты ядра шли бы минутами.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
+[profile.dev.package.chacha20]
+opt-level = 3
+
+[profile.dev.package.poly1305]
+opt-level = 3
+
+# Оценка надёжности пароля на каждое нажатие: без оптимизаций — до секунды.
+[profile.dev.package.zxcvbn]
+opt-level = 3
+
 [profile.release]
 codegen-units = 1
 lto = true
