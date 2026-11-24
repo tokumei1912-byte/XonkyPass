@@ -509,23 +509,6 @@ textarea.area:focus {
   border-bottom: 2px solid var(--accent);
 }
 
-select.dd {
-  height: var(--control);
-  padding: 0 var(--space-2);
-  border: 1px solid var(--border);
-  border-bottom-color: var(--border-strong);
-  border-radius: var(--radius);
-  outline-offset: 1px;
-  background: var(--surface);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-select.dd option {
-  background: var(--popup);
-  color: var(--text);
-}
-
 .field-hint {
   margin-top: 6px;
   color: var(--text-2);

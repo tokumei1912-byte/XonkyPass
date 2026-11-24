@@ -4,6 +4,7 @@
   import { api, type AppInfo, type Settings, type Theme, type UpdateCheck } from '../../lib/api';
   import { session } from '../../lib/session.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
+  import Select from '../../lib/ui/Select.svelte';
   import { dialogs, toasts } from '../../lib/ui/overlays.svelte';
 
   let settings = $state<Settings | null>(null);
@@ -132,21 +133,17 @@
     <div class="card">
       <div class="set">
         <Icon name="timer" size={18} />
-        <label class="text" for="{uid}-clear">
-          <span class="tt">Очищать через</span>
-          <span class="dd2">если в буфере всё ещё наш пароль</span>
-        </label>
-        <select
-          id="{uid}-clear"
-          class="dd"
-          disabled={!settings}
+        <div class="text">
+          <div class="tt" id="{uid}-clear">Очищать через</div>
+          <div class="dd2">если в буфере всё ещё наш пароль</div>
+        </div>
+        <Select
+          options={CLEAR_OPTIONS}
           value={settings?.clipboard_clear_secs}
-          onchange={(e) => change({ clipboard_clear_secs: Number(e.currentTarget.value) })}
-        >
-          {#each CLEAR_OPTIONS as option (option.value)}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
+          labelledby="{uid}-clear"
+          disabled={!settings}
+          onchange={(secs) => change({ clipboard_clear_secs: secs })}
+        />
       </div>
       <div class="set">
         <Icon name="eye-off" size={18} />
@@ -161,18 +158,14 @@
     <div class="card">
       <div class="set">
         <Icon name="contrast" size={18} />
-        <label class="text tt" for="{uid}-theme">Тема</label>
-        <select
-          id="{uid}-theme"
-          class="dd"
-          disabled={!settings}
+        <div class="text tt" id="{uid}-theme">Тема</div>
+        <Select
+          options={THEMES}
           value={settings?.theme}
-          onchange={(e) => change({ theme: e.currentTarget.value as Theme })}
-        >
-          {#each THEMES as theme (theme.value)}
-            <option value={theme.value}>{theme.label}</option>
-          {/each}
-        </select>
+          labelledby="{uid}-theme"
+          disabled={!settings}
+          onchange={(theme) => change({ theme })}
+        />
       </div>
     </div>
 

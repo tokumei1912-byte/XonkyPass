@@ -10,6 +10,7 @@
   } from '../../lib/generator';
   import Icon from '../../lib/ui/Icon.svelte';
   import Segmented from '../../lib/ui/Segmented.svelte';
+  import Select from '../../lib/ui/Select.svelte';
   import StrengthMeter from '../../lib/ui/StrengthMeter.svelte';
   import Switch from '../../lib/ui/Switch.svelte';
 
@@ -39,10 +40,10 @@
   ];
 
   const SEPARATORS = [
-    { value: '-', label: 'дефис  -' },
+    { value: '-', label: 'дефис «-»' },
     { value: ' ', label: 'пробел' },
-    { value: '.', label: 'точка  .' },
-    { value: '_', label: 'подчёркивание  _' },
+    { value: '.', label: 'точка «.»' },
+    { value: '_', label: 'подчёркивание «_»' },
     { value: '', label: 'без разделителя' },
   ];
 
@@ -176,11 +177,11 @@
         </div>
         <div class="opt">
           <label for="{id}-separator" class="grow">Разделитель</label>
-          <select id="{id}-separator" class="dd" bind:value={options.passphrase.separator}>
-            {#each SEPARATORS as separator (separator.value)}
-              <option value={separator.value}>{separator.label}</option>
-            {/each}
-          </select>
+          <Select
+            id="{id}-separator"
+            options={SEPARATORS}
+            bind:value={options.passphrase.separator}
+          />
         </div>
         <div class="opt sets">
           <label class="check">

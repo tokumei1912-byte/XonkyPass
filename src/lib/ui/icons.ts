@@ -27,6 +27,7 @@ export const icons = {
     ['circle', { cx: '12', cy: '12', r: '10' }],
     ['path', { d: 'm9 12 2 2 4-4' }],
   ],
+  'chevron-down': [['path', { d: 'm6 9 6 6 6-6' }]],
   code: [
     ['path', { d: 'm16 18 6-6-6-6' }],
     ['path', { d: 'm8 6-6 6 6 6' }],
