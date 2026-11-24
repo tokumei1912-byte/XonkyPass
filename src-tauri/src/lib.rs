@@ -2,6 +2,7 @@
 
 mod clipboard;
 mod commands;
+mod dock;
 mod error;
 mod events;
 mod logging;
@@ -60,6 +61,11 @@ pub fn run() {
             commands::generator::password_strength,
             commands::clipboard::clipboard_copy,
             commands::clipboard::clipboard_clear,
+            commands::dock::dock_hide,
+            commands::dock::dock_pin,
+            commands::dock::dock_hold,
+            commands::dock::dock_state,
+            commands::dock::dock_monitors,
             commands::settings::settings_get,
             commands::settings::settings_set,
         ])
@@ -72,10 +78,12 @@ pub fn run() {
             tracing::info!(path = %vault_path.display(), "файл хранилища");
             let settings = settings::load(&settings_path);
             let theme = settings.theme;
+            let dock_settings = settings.dock.clone();
             app.manage(AppState::new(vault_path, settings_path, settings));
             app.manage(clipboard::Clipboard::default());
 
             window_ctl::prepare(app.handle(), theme);
+            dock::start(app.handle(), dock_settings);
             clipboard::init(app.handle());
             tray::create(app.handle())?;
             updater::start(app.handle());

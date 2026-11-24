@@ -2,13 +2,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { Backend } from './backend';
 import { toApiError } from './errors';
-import type { Settings } from './types';
+import type { DockState, Settings } from './types';
 
 /** Имена событий — как в `src-tauri/src/events.rs`. */
 const EVENTS = {
   vaultLocked: 'vault://locked',
   clipboardCleared: 'clipboard://cleared',
   settingsChanged: 'settings://changed',
+  dockState: 'dock://state',
 } as const;
 
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -63,8 +64,15 @@ export const tauriBackend: Backend = {
   settingsGet: () => call('settings_get'),
   settingsSet: (settings) => call('settings_set', { settings }),
 
+  dockHide: () => call('dock_hide'),
+  dockPin: (pinned) => call('dock_pin', { pinned }),
+  dockHold: (hold) => call('dock_hold', { hold }),
+  dockState: () => call('dock_state'),
+  dockMonitors: () => call('dock_monitors'),
+
   onVaultLocked: (handler) => listen(EVENTS.vaultLocked, () => handler()),
   onClipboardCleared: (handler) => listen(EVENTS.clipboardCleared, () => handler()),
   onSettingsChanged: (handler) =>
     listen<Settings>(EVENTS.settingsChanged, (event) => handler(event.payload)),
+  onDockState: (handler) => listen<DockState>(EVENTS.dockState, (event) => handler(event.payload)),
 };

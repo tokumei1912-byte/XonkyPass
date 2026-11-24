@@ -11,6 +11,7 @@ import { normalizeTag, retag, searchItems } from './mock-search';
 import type {
   Copied,
   CopyTarget,
+  DockState,
   ItemId,
   ItemMeta,
   ItemSecret,
@@ -35,6 +36,7 @@ const CALL_DELAY_MS = 30;
 const LOCKED_EVENT = 'locked';
 const CLEARED_EVENT = 'cleared';
 const SETTINGS_EVENT = 'settings';
+const DOCK_EVENT = 'dock';
 
 interface StoredItem {
   summary: ItemSummary;
@@ -47,7 +49,8 @@ export function createMockBackend(scenario: MockScenario = 'locked'): Backend {
   let password = MOCK_PASSWORD;
   let recoveryKey = exists ? randomRecoveryKey() : '';
   let unlockedWith: UnlockMethod | null = scenario === 'open' ? 'password' : null;
-  let settings: Settings = { ...DEFAULT_SETTINGS };
+  let settings: Settings = structuredClone(DEFAULT_SETTINGS);
+  let dockState: DockState = { visible: true, pinned: false, mode: settings.dock.mode };
   const items = new Map<ItemId, StoredItem>(
     exists ? demoItems().map((i) => [i.summary.id, i]) : [],
   );
@@ -342,16 +345,47 @@ export function createMockBackend(scenario: MockScenario = 'locked'): Backend {
     },
 
     async settingsGet() {
-      return { ...settings };
+      return structuredClone(settings);
     },
 
     async settingsSet(next) {
       if (next.clipboard_clear_secs < 0 || next.clipboard_clear_secs > 600) {
         throw new ApiError('invalid', 'очистка буфера — не дольше 600 секунд');
       }
-      settings = { ...next };
-      events.dispatchEvent(new CustomEvent(SETTINGS_EVENT, { detail: { ...settings } }));
-      return { ...settings };
+      const { dock } = next;
+      if (
+        dock.side_width < 320 ||
+        dock.side_width > 640 ||
+        dock.top_width < 480 ||
+        dock.top_width > 1600 ||
+        dock.top_height < 360 ||
+        dock.top_height > 1200
+      ) {
+        throw new ApiError('invalid', 'размер панели или задержка вне допустимых пределов');
+      }
+      settings = structuredClone(next);
+      dockState = { ...dockState, mode: settings.dock.mode };
+      events.dispatchEvent(new CustomEvent(SETTINGS_EVENT, { detail: structuredClone(settings) }));
+      events.dispatchEvent(new CustomEvent(DOCK_EVENT, { detail: { ...dockState } }));
+      return structuredClone(settings);
+    },
+
+    // В браузере панель — сама страница: прятать нечего, остальное запоминается.
+    async dockHide() {},
+    async dockPin(pinned) {
+      dockState = { ...dockState, pinned };
+      events.dispatchEvent(new CustomEvent(DOCK_EVENT, { detail: { ...dockState } }));
+      return { ...dockState };
+    },
+    async dockHold() {},
+    async dockState() {
+      return { ...dockState };
+    },
+    async dockMonitors() {
+      return [
+        { id: '\\\\.\\DISPLAY1', number: 1, primary: true, width: 1920, height: 1080, scale: 100 },
+        { id: '\\\\.\\DISPLAY2', number: 2, primary: false, width: 2560, height: 1440, scale: 150 },
+      ];
     },
 
     onVaultLocked: (handler) => on(LOCKED_EVENT, handler),
@@ -360,6 +394,11 @@ export function createMockBackend(scenario: MockScenario = 'locked'): Backend {
       const listener = (e: Event) => handler((e as CustomEvent<Settings>).detail);
       events.addEventListener(SETTINGS_EVENT, listener);
       return Promise.resolve(() => events.removeEventListener(SETTINGS_EVENT, listener));
+    },
+    onDockState: (handler) => {
+      const listener = (e: Event) => handler((e as CustomEvent<DockState>).detail);
+      events.addEventListener(DOCK_EVENT, listener);
+      return Promise.resolve(() => events.removeEventListener(DOCK_EVENT, listener));
     },
   };
 }

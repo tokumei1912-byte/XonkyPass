@@ -3,10 +3,10 @@
 //! Оба окна создаются при старте скрытыми (см. `tauri.conf.json`) и дальше только
 //! показываются и прячутся — так появление получается мгновенным.
 
-use tauri::{AppHandle, Manager, Runtime, WebviewWindow, Window};
+use tauri::{AppHandle, Manager, WebviewWindow, Window};
 
-use crate::platform;
 use crate::settings::Theme;
+use crate::{dock, platform};
 
 /// Панель со списком записей (у края экрана).
 pub const PANEL: &str = "panel";
@@ -55,9 +55,24 @@ fn set_theme(window: &WebviewWindow, theme: Theme) {
     log_err(window.label(), "set_theme", window.set_theme(theme));
 }
 
+// Панелью в Windows управляет `dock` (показ без фокуса, выезд, края экрана); через
+// Tauri — только если его потока нет.
+
 pub fn show_panel(app: &AppHandle) {
+    if dock::send(app, dock::Command::Show) {
+        return;
+    }
     if let Some(window) = app.get_webview_window(PANEL) {
         show(&window);
+    }
+}
+
+pub fn hide_panel(app: &AppHandle) {
+    if dock::send(app, dock::Command::Hide) {
+        return;
+    }
+    if let Some(window) = app.get_webview_window(PANEL) {
+        log_err(window.label(), "hide", window.hide());
     }
 }
 
@@ -70,6 +85,9 @@ pub fn show_palette(app: &AppHandle) {
 }
 
 pub fn toggle_panel(app: &AppHandle) {
+    if dock::send(app, dock::Command::Toggle) {
+        return;
+    }
     let Some(window) = app.get_webview_window(PANEL) else {
         return;
     };
@@ -96,8 +114,13 @@ fn show(window: &WebviewWindow) {
     log_err(window.label(), "set_focus", window.set_focus());
 }
 
-pub fn hide<R: Runtime>(window: &Window<R>) {
-    log_err(window.label(), "hide", window.hide());
+/// Закрытие окна (Alt+F4) только прячет его.
+pub fn hide(window: &Window) {
+    if window.label() == PANEL {
+        hide_panel(window.app_handle());
+    } else {
+        log_err(window.label(), "hide", window.hide());
+    }
 }
 
 fn log_err(label: &str, action: &str, result: tauri::Result<()>) {

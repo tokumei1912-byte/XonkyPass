@@ -2,12 +2,12 @@
   import { onMount } from 'svelte';
   import { reportError } from '../lib/actions';
   import { api } from '../lib/api';
+  import { dock } from '../lib/dock.svelte';
   import { session } from '../lib/session.svelte';
   import ContextMenu from '../lib/ui/ContextMenu.svelte';
   import DialogHost from '../lib/ui/DialogHost.svelte';
   import { dialogs, menu, toasts } from '../lib/ui/overlays.svelte';
   import Toasts from '../lib/ui/Toasts.svelte';
-  import { hideCurrentWindow } from '../lib/window';
   import ItemView from './panel/ItemView.svelte';
   import List from './panel/List.svelte';
   import LoginEdit from './panel/LoginEdit.svelte';
@@ -28,7 +28,9 @@
       api.onVaultLocked(() => session.locked()),
       api.onClipboardCleared(() => toasts.clipboardCleared()),
     ];
+    const unwatchDock = dock.watch();
     return () => {
+      unwatchDock();
       for (const subscription of subscriptions)
         void subscription.then((unsubscribe) => unsubscribe());
     };
@@ -38,6 +40,19 @@
   const editing = $derived(
     screen.name === 'edit' || screen.name === 'change-password' || screen.name === 'recovery-key',
   );
+
+  // Пока открыт диалог, идёт редактирование или показан ключ восстановления, панель
+  // не прячется сама: можно сходить в другое окно и вернуться.
+  const held = $derived(
+    dialogs.current !== null ||
+      (session.phase === 'open' && editing) ||
+      session.phase === 'setup' ||
+      session.phase === 'recovery' ||
+      session.phase === 'reset',
+  );
+  $effect(() => {
+    api.dockHold(held).catch(() => {});
+  });
   /** Тосты — над нижней панелью экрана, если она есть. */
   const toastOffset = $derived(
     session.phase === 'open' &&
@@ -60,7 +75,13 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       if (session.phase === 'open' && session.stack.length > 1) void session.leave();
-      else void hideCurrentWindow();
+      else api.dockHide().catch(reportError);
+      return;
+    }
+    // Ctrl+P в WebView открыл бы печать.
+    if (ctrl && e.code === 'KeyP') {
+      e.preventDefault();
+      if (dock.docked) void dock.togglePin();
       return;
     }
     if (session.phase !== 'open') return;

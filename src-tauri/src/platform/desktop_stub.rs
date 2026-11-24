@@ -31,6 +31,15 @@ pub mod dialog {
     }
 }
 
+pub mod dock {
+    use crate::dock::geometry::Monitor;
+
+    /// Панелью у края управляет только Windows-версия.
+    pub fn monitors() -> Vec<Monitor> {
+        Vec::new()
+    }
+}
+
 pub mod shell {
     use std::path::Path;
 

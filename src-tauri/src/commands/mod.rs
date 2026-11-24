@@ -7,6 +7,7 @@
 
 pub mod app;
 pub mod clipboard;
+pub mod dock;
 pub mod generator;
 pub mod items;
 pub mod search;

@@ -1,17 +1,43 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { reportError } from '../../lib/actions';
-  import { api, type AppInfo, type Settings, type Theme, type UpdateCheck } from '../../lib/api';
+  import {
+    api,
+    type AppInfo,
+    type DockMode,
+    type DockSettings,
+    type MonitorInfo,
+    type Settings,
+    type Theme,
+    type UpdateCheck,
+  } from '../../lib/api';
   import { session } from '../../lib/session.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import Select from '../../lib/ui/Select.svelte';
+  import Switch from '../../lib/ui/Switch.svelte';
   import { dialogs, toasts } from '../../lib/ui/overlays.svelte';
 
   let settings = $state<Settings | null>(null);
   let info = $state<AppInfo | null>(null);
   let update = $state<UpdateCheck | null>(null);
   let checking = $state(false);
+  let monitors = $state<MonitorInfo[]>([]);
   const uid = $props.id();
+
+  const MODES: readonly { value: DockMode; label: string }[] = [
+    { value: 'left', label: 'Слева' },
+    { value: 'right', label: 'Справа' },
+    { value: 'top', label: 'Сверху' },
+    { value: 'window', label: 'Обычное окно' },
+  ];
+  const SIDE_WIDTHS = [320, 360, 400, 480, 560, 640];
+  const TOP_SIZES: readonly (readonly [number, number])[] = [
+    [640, 440],
+    [720, 520],
+    [840, 600],
+    [960, 680],
+  ];
+  const HOVER_DELAYS = [100, 200, 400, 700];
 
   const CLEAR_OPTIONS = [
     { value: 10, label: '10 секунд' },
@@ -31,6 +57,7 @@
   onMount(() => {
     api.settingsGet().then((value) => (settings = value), reportError);
     api.appInfo().then((value) => (info = value), reportError);
+    api.dockMonitors().then((value) => (monitors = value), reportError);
     const unsubscribe = api.onSettingsChanged((value) => (settings = value));
     return () => void unsubscribe.then((off) => off());
   });
@@ -43,6 +70,64 @@
       reportError(error);
     }
   }
+
+  function changeDock(patch: Partial<DockSettings>) {
+    if (settings) void change({ dock: { ...settings.dock, ...patch } });
+  }
+
+  const dockSettings = $derived(settings?.dock);
+  const docked = $derived(dockSettings !== undefined && dockSettings.mode !== 'window');
+
+  /** Экран панели; если сохранённого нет среди подключённых — основной, как в Rust. */
+  const monitor = $derived(
+    monitors.find((m) => m.id === dockSettings?.monitor) ??
+      monitors.find((m) => m.primary) ??
+      monitors[0],
+  );
+  const monitorOptions = $derived(
+    monitors.map((m) => ({
+      value: m.id,
+      label: `Экран ${m.number}${m.primary ? ' · основной' : ''}`,
+    })),
+  );
+
+  /** Варианты плюс текущее значение, если его задали мышью и его нет в списке. */
+  function withCurrent(values: readonly number[], current: number | null | undefined): number[] {
+    const all = [...values];
+    if (current != null && !all.includes(current)) all.push(current);
+    return all.sort((a, b) => a - b);
+  }
+
+  const widthOptions = $derived(
+    withCurrent(SIDE_WIDTHS, dockSettings?.side_width).map((w) => ({
+      value: w,
+      label: `${w} px`,
+    })),
+  );
+
+  const topSizeOptions = $derived.by(() => {
+    const sizes = TOP_SIZES.map(([w, h]) => [w, h] as const);
+    if (dockSettings) {
+      const { top_width: w, top_height: h } = dockSettings;
+      if (!sizes.some(([a, b]) => a === w && b === h)) sizes.push([w, h]);
+    }
+    sizes.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    return sizes.map(([w, h]) => ({ value: `${w}x${h}`, label: `${w} × ${h}` }));
+  });
+
+  function changeTopSize(value: string) {
+    const [top_width, top_height] = value.split('x').map(Number);
+    if (top_width && top_height) changeDock({ top_width, top_height });
+  }
+
+  /** `0` в списке — «не выезжать» (`null` в настройках). */
+  const hoverOptions = $derived([
+    ...withCurrent(HOVER_DELAYS, dockSettings?.hover_delay_ms).map((ms) => ({
+      value: ms,
+      label: `через ${(ms / 1000).toLocaleString('ru-RU')} с`,
+    })),
+    { value: 0, label: 'не выезжать' },
+  ]);
 
   async function newRecoveryKey() {
     const ok = await dialogs.confirm({
@@ -152,6 +237,109 @@
           <div class="dd2 wrap">Скопированное не видно в Win+V и не уходит в облачный буфер</div>
         </div>
       </div>
+    </div>
+
+    <h2 class="sec">Панель</h2>
+    <div class="card">
+      <div class="set">
+        <Icon name="panel-left" size={18} />
+        <div class="text">
+          <div class="tt" id="{uid}-mode">Положение</div>
+          <div class="dd2 wrap">
+            {docked
+              ? 'Перетащите за заголовок к другому краю'
+              : 'Перетащите к краю экрана, чтобы прикрепить'}
+          </div>
+        </div>
+        <Select
+          options={MODES}
+          value={dockSettings?.mode}
+          labelledby="{uid}-mode"
+          disabled={!settings}
+          onchange={(mode) => changeDock({ mode })}
+        />
+      </div>
+      {#if docked && dockSettings}
+        {#if monitors.length > 1 && monitor}
+          <div class="set">
+            <Icon name="monitor" size={18} />
+            <div class="text">
+              <div class="tt" id="{uid}-monitor">Экран</div>
+              <div class="dd2">
+                {monitor.width} × {monitor.height} · {monitor.scale}%
+              </div>
+            </div>
+            <Select
+              options={monitorOptions}
+              value={monitor.id}
+              labelledby="{uid}-monitor"
+              onchange={(id) =>
+                changeDock({ monitor: monitors.find((m) => m.id === id)?.primary ? null : id })}
+            />
+          </div>
+        {/if}
+        <div class="set">
+          <Icon name="move-horizontal" size={18} />
+          <div class="text">
+            <div class="tt" id="{uid}-size">
+              {dockSettings.mode === 'top' ? 'Размер' : 'Ширина'}
+            </div>
+            <div class="dd2">Или потяните за край панели</div>
+          </div>
+          {#if dockSettings.mode === 'top'}
+            <Select
+              options={topSizeOptions}
+              value="{dockSettings.top_width}x{dockSettings.top_height}"
+              labelledby="{uid}-size"
+              onchange={changeTopSize}
+            />
+          {:else}
+            <Select
+              options={widthOptions}
+              value={dockSettings.side_width}
+              labelledby="{uid}-size"
+              onchange={(side_width) => changeDock({ side_width })}
+            />
+          {/if}
+        </div>
+        <div class="set">
+          <Icon name="mouse-pointer" size={18} />
+          <div class="text">
+            <div class="tt" id="{uid}-hover">Выезжать при наведении</div>
+            <div class="dd2">когда мышь у края экрана</div>
+          </div>
+          <Select
+            options={hoverOptions}
+            value={dockSettings.hover_delay_ms ?? 0}
+            labelledby="{uid}-hover"
+            onchange={(ms) => changeDock({ hover_delay_ms: ms === 0 ? null : ms })}
+          />
+        </div>
+        <div class="set">
+          <Icon name="chevrons-right" size={18} />
+          <div class="text">
+            <div class="tt" id="{uid}-animate">Плавно выезжать</div>
+            <div class="dd2">и плавно прятаться</div>
+          </div>
+          <Switch
+            checked={dockSettings.animate}
+            labelledby="{uid}-animate"
+            onchange={(animate) => changeDock({ animate })}
+          />
+        </div>
+        <div class="set">
+          <Icon name="panel-left-dashed" size={18} />
+          <div class="text">
+            <div class="tt" id="{uid}-indicator">Полоска у края</div>
+            <div class="dd2 wrap">Тонкая цветная полоса там, где спрятана панель</div>
+          </div>
+          <Switch
+            checked={dockSettings.indicator}
+            labelledby="{uid}-indicator"
+            onchange={(indicator) => changeDock({ indicator })}
+          />
+        </div>
+      {/if}
     </div>
 
     <h2 class="sec">Внешний вид</h2>

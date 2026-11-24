@@ -10,6 +10,7 @@
     trashItem,
   } from '../../lib/actions';
   import { api, type ItemSummary, type SearchResult } from '../../lib/api';
+  import { dock } from '../../lib/dock.svelte';
   import { subtitle } from '../../lib/items';
   import {
     applySuggestion,
@@ -457,6 +458,21 @@
     >
       <Icon name="lock" />
     </button>
+    {#if dock.docked}
+      <button
+        type="button"
+        class="ib"
+        class:on={dock.state.pinned}
+        aria-pressed={dock.state.pinned}
+        aria-label="Закрепить панель (Ctrl+P)"
+        title={dock.state.pinned
+          ? 'Панель закреплена и не прячется сама (Ctrl+P)'
+          : 'Закрепить: панель не будет прятаться сама (Ctrl+P)'}
+        onclick={() => dock.togglePin()}
+      >
+        <Icon name="pin" />
+      </button>
+    {/if}
   </header>
 
   {#if session.items.length === 0}

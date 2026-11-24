@@ -3,10 +3,9 @@
 use tauri::{AppHandle, Emitter};
 
 use crate::error::CommandError;
-use crate::events;
-use crate::settings::{self, Settings};
+use crate::settings::Settings;
 use crate::state::blocking;
-use crate::window_ctl;
+use crate::{dock, events, window_ctl};
 
 #[tauri::command]
 pub async fn settings_get(app: AppHandle) -> Result<Settings, CommandError> {
@@ -18,13 +17,19 @@ pub async fn settings_get(app: AppHandle) -> Result<Settings, CommandError> {
 pub async fn settings_set(app: AppHandle, settings: Settings) -> Result<Settings, CommandError> {
     settings.validate()?;
     blocking(&app, move |app, state| {
-        settings::save(&state.settings_path, &settings).map_err(CommandError::internal)?;
-        state.set_settings(settings.clone());
-        window_ctl::apply_theme(app, settings.theme);
-        if let Err(err) = app.emit(events::SETTINGS_CHANGED, &settings) {
-            tracing::warn!(%err, "не удалось сообщить окнам о новых настройках");
-        }
-        Ok(settings)
+        let saved = state.update_settings(|current| *current = settings)?;
+        window_ctl::apply_theme(app, saved.theme);
+        dock::send(app, dock::Command::Settings(saved.dock.clone()));
+        notify(app, &saved);
+        Ok(saved)
     })
     .await
+}
+
+/// Сообщает окнам о новых настройках: тема нужна обоим, экран настроек показывает
+/// положение панели, которое могло смениться перетаскиванием.
+pub fn notify(app: &AppHandle, settings: &Settings) {
+    if let Err(err) = app.emit(events::SETTINGS_CHANGED, settings) {
+        tracing::warn!(%err, "не удалось сообщить окнам о новых настройках");
+    }
 }

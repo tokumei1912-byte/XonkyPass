@@ -7,7 +7,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use xonkypass_core::Vault;
 
 use crate::error::CommandError;
-use crate::settings::Settings;
+use crate::settings::{self, Settings};
 use crate::{clipboard, events};
 
 pub struct AppState {
@@ -41,8 +41,19 @@ impl AppState {
             .clone()
     }
 
-    pub fn set_settings(&self, settings: Settings) {
-        *self.settings.lock().unwrap_or_else(PoisonError::into_inner) = settings;
+    /// Меняет настройки и записывает файл под одной блокировкой: окно настроек и панель
+    /// (после перетаскивания к другому краю) могут сохранять одновременно.
+    pub fn update_settings(
+        &self,
+        change: impl FnOnce(&mut Settings),
+    ) -> Result<Settings, CommandError> {
+        let mut guard = self.settings.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut next = guard.clone();
+        change(&mut next);
+        next.validate()?;
+        settings::save(&self.settings_path, &next).map_err(CommandError::internal)?;
+        *guard = next.clone();
+        Ok(next)
     }
 }
 

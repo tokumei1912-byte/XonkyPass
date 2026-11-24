@@ -20,9 +20,13 @@ mod desktop_stub;
 #[cfg(windows)]
 pub mod dialog;
 #[cfg(windows)]
+pub mod dock;
+#[cfg(windows)]
+mod indicator;
+#[cfg(windows)]
 pub mod shell;
 #[cfg(not(windows))]
-pub use desktop_stub::{appearance, dialog, shell};
+pub use desktop_stub::{appearance, dialog, dock, shell};
 
 #[cfg(windows)]
 mod window_style;

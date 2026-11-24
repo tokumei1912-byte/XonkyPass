@@ -169,13 +169,77 @@ export interface Copied {
 
 export type Theme = 'system' | 'light' | 'dark';
 
+/** Где живёт панель: у края экрана или обычным окном. */
+export type DockMode = 'left' | 'right' | 'top' | 'window';
+
+/** Положение окна: угол — физические пиксели экрана, размер — логические. */
+export interface WindowPlacement {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Как `DockSettings` в `src-tauri/src/settings.rs`. */
+export interface DockSettings {
+  mode: DockMode;
+  /** Имя монитора (`\\.\DISPLAY2`); `null` — основной. */
+  monitor: string | null;
+  /** 320–640. */
+  side_width: number;
+  /** 480–1600. */
+  top_width: number;
+  /** 360–1200. */
+  top_height: number;
+  /** Задержка у края, 50–1000 мс; `null` — не выезжать от наведения. */
+  hover_delay_ms: number | null;
+  animate: boolean;
+  indicator: boolean;
+  window: WindowPlacement | null;
+}
+
 export interface Settings {
   /** 0 — не очищать буфер. */
   clipboard_clear_secs: number;
   theme: Theme;
+  dock: DockSettings;
 }
 
-export const DEFAULT_SETTINGS: Settings = { clipboard_clear_secs: 20, theme: 'system' };
+export const DEFAULT_DOCK: DockSettings = {
+  mode: 'left',
+  monitor: null,
+  side_width: 400,
+  top_width: 720,
+  top_height: 520,
+  hover_delay_ms: 200,
+  animate: true,
+  indicator: false,
+  window: null,
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  clipboard_clear_secs: 20,
+  theme: 'system',
+  dock: DEFAULT_DOCK,
+};
+
+export interface DockState {
+  visible: boolean;
+  pinned: boolean;
+  mode: DockMode;
+}
+
+export interface MonitorInfo {
+  id: string;
+  /** Номер как в параметрах экрана Windows. */
+  number: number;
+  primary: boolean;
+  /** Физические пиксели. */
+  width: number;
+  height: number;
+  /** Масштаб, %. */
+  scale: number;
+}
 
 export interface AppInfo {
   name: string;

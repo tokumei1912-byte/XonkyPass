@@ -41,3 +41,9 @@ pub fn accent() -> PlatformResult<Accent> {
         dark: hex(UIColorType::AccentLight2)?,
     })
 }
+
+/// Основной цвет акцента (для полоски у края экрана). Поток должен инициализировать COM.
+pub fn accent_rgb() -> PlatformResult<(u8, u8, u8)> {
+    let c = UISettings::new()?.GetColorValue(UIColorType::Accent)?;
+    Ok((c.R, c.G, c.B))
+}

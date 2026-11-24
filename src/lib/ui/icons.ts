@@ -28,6 +28,10 @@ export const icons = {
     ['path', { d: 'm9 12 2 2 4-4' }],
   ],
   'chevron-down': [['path', { d: 'm6 9 6 6 6-6' }]],
+  'chevrons-right': [
+    ['path', { d: 'm6 17 5-5-5-5' }],
+    ['path', { d: 'm13 17 5-5-5-5' }],
+  ],
   code: [
     ['path', { d: 'm16 18 6-6-6-6' }],
     ['path', { d: 'm8 6-6 6 6 6' }],
@@ -152,10 +156,29 @@ export const icons = {
     ['rect', { width: '18', height: '11', x: '3', y: '11', rx: '2', ry: '2' }],
     ['path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' }],
   ],
+  monitor: [
+    ['rect', { width: '20', height: '14', x: '2', y: '3', rx: '2' }],
+    ['line', { x1: '8', x2: '16', y1: '21', y2: '21' }],
+    ['line', { x1: '12', x2: '12', y1: '17', y2: '21' }],
+  ],
   more: [
     ['circle', { cx: '12', cy: '12', r: '1' }],
     ['circle', { cx: '19', cy: '12', r: '1' }],
     ['circle', { cx: '5', cy: '12', r: '1' }],
+  ],
+  'mouse-pointer': [
+    ['path', { d: 'M12.586 12.586 19 19' }],
+    [
+      'path',
+      {
+        d: 'M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z',
+      },
+    ],
+  ],
+  'move-horizontal': [
+    ['path', { d: 'm18 8 4 4-4 4' }],
+    ['path', { d: 'M2 12h20' }],
+    ['path', { d: 'm6 8-4 4 4 4' }],
   ],
   note: [
     ['path', { d: 'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z' }],
@@ -163,6 +186,17 @@ export const icons = {
     ['path', { d: 'M10 9H8' }],
     ['path', { d: 'M16 13H8' }],
     ['path', { d: 'M16 17H8' }],
+  ],
+  'panel-left': [
+    ['rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }],
+    ['path', { d: 'M9 3v18' }],
+  ],
+  'panel-left-dashed': [
+    ['rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }],
+    ['path', { d: 'M9 14v1' }],
+    ['path', { d: 'M9 19v2' }],
+    ['path', { d: 'M9 3v2' }],
+    ['path', { d: 'M9 9v1' }],
   ],
   pencil: [
     [

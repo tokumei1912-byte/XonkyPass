@@ -3,11 +3,13 @@ import type {
   Appearance,
   Copied,
   CopyTarget,
+  DockState,
   ItemId,
   ItemList,
   ItemMeta,
   ItemSecret,
   ItemSummary,
+  MonitorInfo,
   PassphraseOptions,
   PasswordOptions,
   Scope,
@@ -85,10 +87,21 @@ export interface Backend {
   settingsGet(): Promise<Settings>;
   settingsSet(settings: Settings): Promise<Settings>;
 
+  /** Спрятать панель (Esc) — с анимацией, если она у края. */
+  dockHide(): Promise<void>;
+  /** Закрепить: панель не прячется сама. */
+  dockPin(pinned: boolean): Promise<DockState>;
+  /** Открыт диалог или идёт редактирование — панель не прячется сама. */
+  dockHold(hold: boolean): Promise<void>;
+  dockState(): Promise<DockState>;
+  dockMonitors(): Promise<MonitorInfo[]>;
+
   /** Хранилище заблокировано (кнопкой, из трея, позже — по таймеру и Win+L). */
   onVaultLocked(handler: () => void): Promise<Unsubscribe>;
   /** Буфер обмена очищен по таймеру или при блокировке. */
   onClipboardCleared(handler: () => void): Promise<Unsubscribe>;
-  /** Настройки изменились (в любом окне). */
+  /** Настройки изменились (в любом окне, или панель перетащили к другому краю). */
   onSettingsChanged(handler: (settings: Settings) => void): Promise<Unsubscribe>;
+  /** Панель показана, спрятана, закреплена или сменила режим. */
+  onDockState(handler: (state: DockState) => void): Promise<Unsubscribe>;
 }
