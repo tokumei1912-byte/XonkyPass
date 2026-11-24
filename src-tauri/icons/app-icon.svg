@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Временная иконка XonkyPass: плитка с градиентом и замочной скважиной. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3d7bff"/>
+      <stop offset="1" stop-color="#7a3ff0"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="208" fill="url(#bg)"/>
+  <circle cx="512" cy="410" r="150" fill="#ffffff"/>
+  <path d="M440 470 L396 790 Q394 812 416 812 H608 Q630 812 628 790 L584 470 Z" fill="#ffffff"/>
+</svg>

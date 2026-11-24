@@ -51,9 +51,13 @@ Windows 10 22H2 или Windows 11, x64.
 
 Подробности — в [docs/PLAN.md](docs/PLAN.md#2-данные-и-шифрование).
 
-## Сборка из исходников
+## Скачать сборку
 
-> Команды заработают после этапа 0 (каркас проекта).
+Установщик собирается автоматически при каждом изменении: вкладка
+[Actions](https://github.com/tokumei1912-byte/XonkyPass/actions) → нужная сборка → раздел
+**Artifacts**. Подробнее и чек-листы проверки — в [docs/TESTING.md](docs/TESTING.md).
+
+## Сборка из исходников
 
 Что нужно установить:
 
@@ -74,17 +78,26 @@ npm run tauri dev
 npm run tauri build
 ```
 
-Установщик появится в `src-tauri/target/release/bundle/nsis/`.
+Установщик появится в `target/release/bundle/nsis/`.
 
-Готовые установщики собираются автоматически в GitHub Actions (раздел Artifacts у сборки), позже будут в Releases.
+Проверки перед коммитом:
+
+```bash
+npm run format:check && npm run lint && npm run check
+```
+
+```bash
+cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
+```
 
 ## Структура проекта
 
 ```
-crates/core/   ядро без интерфейса: шифрование, БД, поиск, генератор, импорт
-src-tauri/     приложение Tauri: команды, трей, горячие клавиши, Win32
-src/           интерфейс на Svelte
-docs/          план, формат файла, чек-листы проверки
+crates/core/        ядро без интерфейса: шифрование, БД, поиск, генератор, импорт
+src-tauri/          приложение Tauri: команды, трей, горячие клавиши, Win32
+src/                интерфейс на Svelte
+docs/               план, чек-листы проверки
+.github/workflows/  CI: проверки на Linux, сборка установщика на Windows
 ```
 
 ## Лицензия
